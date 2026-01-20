@@ -15,8 +15,10 @@ Advanced spatial analysis and data science for urban planning and public policy.
 - **Final Project:** Capstone modeling challenge
 
 ## About Me
-[Students will customize this section]
+- Name: Gab Chen
+- Background: B.Arch at Rhode Island School of Design
+
 
 ## Contact
-- Email: [your.email@upenn.edu]
-- GitHub: [@your-username]
+- Email: gabchen@upenn.edu
+- GitHub: @gabyxchen
