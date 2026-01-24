@@ -94,7 +94,7 @@ Practice selecting different combinations of columns:
 select(car_data, Model, Mileage)
 
 # Select Manufacturer, Price, and Fuel type
-select(car_data, Manufacturer, Price, Fuel type)
+select(car_data, Manufacturer, Price, `Fuel type`)
 
 # Challenge: Select all columns EXCEPT Engine Size
 

@@ -1,0 +1,16 @@
+---
+title: "Week 1 Notes - Course Introduction"
+date: "2026-01-13"
+format: docx
+---
+
+## Key Concepts Learned
+  -How to create a portfolio using template
+  -How to create a repository on GitHub
+  -How to push and pull between GitHub and GitHub Desktop
+  
+## Coding Techniques
+  -Quarto
+
+## Questions & Challenges
+---
