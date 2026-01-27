@@ -11,13 +11,13 @@ website:
         
       - text: Weekly Notes
         menu:
-          - href: weekly-notes/week-01-notes.qmd
+          - href: weekly-notes/week-01-notes.html
             text: Week 1
           
       - text: Labs
         menu:
           - href: lab/lab0/lab0.qmd
-            text: "Lab 0: dplyr Basics"
+            text: "Lab 0: Getting Started with dply"
 
 format:
   html:
