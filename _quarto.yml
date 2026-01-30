@@ -11,7 +11,7 @@ website:
         
       - text: Weekly Notes
         menu:
-          - href: weekly-notes/week-01-notes.html
+          - href: weekly-notes/week-01-notes.qmd
             text: Week 1
           
       - text: Labs
