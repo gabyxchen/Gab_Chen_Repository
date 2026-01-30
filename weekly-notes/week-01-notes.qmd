@@ -5,36 +5,19 @@ editor: visual
 ---
 
 ## Key Concepts Learned
-  -How to create a portfolio using template
-  -How to create a repository on GitHub
-  -How to push and pull between GitHub and GitHub Desktop
+  - How to create a portfolio using template
+  
+  - How to create a repository on GitHub
+  
+  - How to push and pull between GitHub and GitHub Desktop
   
 ## Coding Techniques
-  -Quarto and render
+  - Quarto and render
 
 ## Questions & Challenges
-  -Setting up weekly notes
-  -What is the relationship and difference between yml and qmd
-  -How to change yml file to correctly linked files in the menu bar
+  - Setting up weekly notes
+  
+  - What is the relationship and difference between yml and qmd
+  
+  - How to change yml file to correctly linked files in the menu bar
 ---
-
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
-```{r}
-1 + 1
-```
-
-You can add options to executable code like this
-
-```{r}
-#| echo: false
-2 * 2
-```
-
-The `echo: false` option disables the printing of code (only output is displayed).
