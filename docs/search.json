@@ -243,5 +243,187 @@
     "title": "Lab 1: Census Data Quality for Policy Decisions",
     "section": "Submission Checklist",
     "text": "Submission Checklist\nBefore submitting your portfolio link on Canvas:\n\nAll code chunks run without errors\nAll “[Fill this in]” prompts have been completed\nTables are properly formatted and readable\nExecutive summary addresses all four required components\nPortfolio navigation includes this assignment\nCensus API key is properly set\nDocument renders correctly to HTML\n\nRemember: Submit your portfolio URL on Canvas, not the file itself. Your assignment should be accessible at your-portfolio-url/labs/lab_1/your_file_name.html"
+  },
+  {
+    "objectID": "lecture/week3.html#what-well-cover",
+    "href": "lecture/week3.html#what-well-cover",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "What We’ll Cover",
+    "text": "What We’ll Cover\nPart 1: Why Visualization Matters\n\nAnscombe’s Quartet and the limits of summary statistics\nVisualization in policy context\nConnection to algorithmic bias and data ethics\n\nPart 2: Grammar of Graphics\n\nggplot2 fundamentals\nAesthetic mappings and geoms\nLive demonstration\n\nPart 3: Exploratory Data Analysis\n\nEDA workflow and principles\nUnderstanding distributions and relationships\nCritical focus: Data quality and uncertainty\n\nPart 4: Data Joins & Integration\n\nCombining datasets with dplyr joins\n\nPart 5: Hands-On Lab\n\nGuided practice with census data\nCreate publication-ready visualizations\nPractice ethical data communication"
+  },
+  {
+    "objectID": "lecture/week3.html#opening-question",
+    "href": "lecture/week3.html#opening-question",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Opening Question",
+    "text": "Opening Question\nThink about Lab 1:\nYou created a table showing income reliability patterns across counties. But what if you needed to present these findings to:\n\nThe state legislature (2-minute briefing)\nCommunity advocacy groups\nLocal news reporters\n\nDiscussion: How might visual presentation change the impact of your analysis?"
+  },
+  {
+    "objectID": "lecture/week3.html#anscombes-quartet-the-famous-example",
+    "href": "lecture/week3.html#anscombes-quartet-the-famous-example",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Anscombe’s Quartet: The Famous Example",
+    "text": "Anscombe’s Quartet: The Famous Example\nFour datasets with identical summary statistics:\n\nSame means (x̄ = 9, ȳ = 7.5)\nSame variances\nSame correlation (r = 0.816)\nSame regression line\n\nBut completely different patterns when visualized"
+  },
+  {
+    "objectID": "lecture/week3.html#the-policy-implications",
+    "href": "lecture/week3.html#the-policy-implications",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "The Policy Implications",
+    "text": "The Policy Implications\nWhy this matters for your work:\n\nSummary statistics can hide critical patterns\nOutliers may represent important communities\nRelationships aren’t always linear\nVisual inspection reveals data quality issues\n\nExample: A county with “average” income might have extreme inequality that algorithms would miss without visualization."
+  },
+  {
+    "objectID": "lecture/week3.html#connecting-week-2-ethical-data-communication",
+    "href": "lecture/week3.html#connecting-week-2-ethical-data-communication",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Connecting Week 2: Ethical Data Communication",
+    "text": "Connecting Week 2: Ethical Data Communication\nFrom last week’s algorithmic bias discussion:\nResearch finding: Only 27% of planners warn users about unreliable ACS data - Most planners don’t report margins of error - Many lack training on statistical uncertainty - This violates AICP Code of Ethics\nYour responsibility:\n\nCreate honest, transparent visualizations\nAlways assess and communicate data quality\nConsider who might be harmed by uncertain data"
+  },
+  {
+    "objectID": "lecture/week3.html#bad-visualizations-have-real-consequences",
+    "href": "lecture/week3.html#bad-visualizations-have-real-consequences",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Bad Visualizations Have Real Consequences",
+    "text": "Bad Visualizations Have Real Consequences\nCommon problems in government data presentation:\n\nMisleading scales or axes\nCherry-picked time periods\n\nHidden or ignored uncertainty\nMissing context about data reliability\n\nReal impact: The Jurjevich et al. study found that 72% of Portland census tracts had unreliable child poverty estimates, yet planners rarely communicated this uncertainty.\nResult: Poor policy decisions based on misunderstood data"
+  },
+  {
+    "objectID": "lecture/week3.html#the-ggplot2-philosophy",
+    "href": "lecture/week3.html#the-ggplot2-philosophy",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "The ggplot2 Philosophy",
+    "text": "The ggplot2 Philosophy\nGrammar of Graphics principles:\nData → Aesthetics → Geometries → Visual\n\nData: Your dataset (census data, survey responses, etc.)\nAesthetics: What variables map to visual properties (x, y, color, size)\nGeometries: How to display the data (points, bars, lines)\nAdditional layers: Scales, themes, facets, annotations"
+  },
+  {
+    "objectID": "lecture/week3.html#basic-ggplot2-structure",
+    "href": "lecture/week3.html#basic-ggplot2-structure",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Basic ggplot2 Structure",
+    "text": "Basic ggplot2 Structure\nEvery ggplot has this pattern:\nggplot(data = your_data) +   aes(x = variable1, y = variable2) +   geom_something() +   additional_layers()\nYou build plots by adding layers with +"
+  },
+  {
+    "objectID": "lecture/week3.html#live-demo-basic-scatter-plot",
+    "href": "lecture/week3.html#live-demo-basic-scatter-plot",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Live Demo: Basic Scatter Plot",
+    "text": "Live Demo: Basic Scatter Plot"
+  },
+  {
+    "objectID": "lecture/week3.html#aesthetic-mappings-the-key-to-ggplot2",
+    "href": "lecture/week3.html#aesthetic-mappings-the-key-to-ggplot2",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Aesthetic Mappings: The Key to ggplot2",
+    "text": "Aesthetic Mappings: The Key to ggplot2\nAesthetics map data to visual properties:\n\nx, y - position\ncolor - point/line color\nfill - area fill color\n\nsize - point/line size\nshape - point shape\nalpha - transparency\n\nImportant: Aesthetics go inside aes(), constants go outside"
+  },
+  {
+    "objectID": "lecture/week3.html#improving-plots-with-labels-and-themes",
+    "href": "lecture/week3.html#improving-plots-with-labels-and-themes",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Improving Plots with Labels and Themes",
+    "text": "Improving Plots with Labels and Themes"
+  },
+  {
+    "objectID": "lecture/week3.html#the-eda-mindset",
+    "href": "lecture/week3.html#the-eda-mindset",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "The EDA Mindset",
+    "text": "The EDA Mindset\nExploratory Data Analysis is detective work:\n\nWhat does the data look like? (distributions, missing values)\nWhat patterns exist? (relationships, clusters, trends)\n\nWhat’s unusual? (outliers, anomalies, data quality issues)\nWhat questions does this raise? (hypotheses for further investigation)\nHow reliable is this data?\n\nGoal: Understand your data before making decisions or building models"
+  },
+  {
+    "objectID": "lecture/week3.html#eda-workflow-with-data-quality-focus",
+    "href": "lecture/week3.html#eda-workflow-with-data-quality-focus",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "EDA Workflow with Data Quality Focus",
+    "text": "EDA Workflow with Data Quality Focus\nEnhanced process for policy analysis:\n\nLoad and inspect - dimensions, variable types, missing data\nAssess reliability - examine margins of error, calculate coefficients of variation\nVisualize distributions - histograms, boxplots for each variable\nExplore relationships - scatter plots, correlations\nIdentify patterns - grouping, clustering, geographical patterns\nQuestion anomalies - investigate outliers and unusual patterns\nDocument limitations - prepare honest communication about data quality"
+  },
+  {
+    "objectID": "lecture/week3.html#understanding-distributions",
+    "href": "lecture/week3.html#understanding-distributions",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Understanding Distributions",
+    "text": "Understanding Distributions\nWhy distribution shape matters:\n\nWhat to look for: Skewness, outliers, multiple peaks, gaps"
+  },
+  {
+    "objectID": "lecture/week3.html#boxplots",
+    "href": "lecture/week3.html#boxplots",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Boxplots!",
+    "text": "Boxplots!"
+  },
+  {
+    "objectID": "lecture/week3.html#critical-data-quality-through-visualization",
+    "href": "lecture/week3.html#critical-data-quality-through-visualization",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Critical: Data Quality Through Visualization",
+    "text": "Critical: Data Quality Through Visualization\nResearch insight: Most planners don’t visualize or communicate uncertainty\n\nPattern: Smaller populations have higher uncertainty Ethical implication: These communities might be systematically undercounted"
+  },
+  {
+    "objectID": "lecture/week3.html#research-based-recommendations-for-planners",
+    "href": "lecture/week3.html#research-based-recommendations-for-planners",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Research-Based Recommendations for Planners",
+    "text": "Research-Based Recommendations for Planners\nJurjevich et al. (2018): 5 Essential Guidelines for Using ACS Data\n\nReport the corresponding MOEs of ACS estimates - Always include margin of error values\nInclude a footnote when not reporting MOEs - Explicitly acknowledge omission\n\nProvide context for (un)reliability - Use coefficient of variation (CV):\n\nCV &lt; 12% = reliable (green coding)\nCV 12-40% = somewhat reliable (yellow)\nCV &gt; 40% = unreliable (red coding)\n\nReduce statistical uncertainty - Collapse data detail, aggregate geographies, use multi-year estimates\nAlways conduct statistical significance tests when comparing ACS estimates over time\n\nKey insight: These practices are not just technical best practices—they are ethical requirements under the AICP Code of Ethics"
+  },
+  {
+    "objectID": "lecture/week3.html#eda-for-policy-analysis",
+    "href": "lecture/week3.html#eda-for-policy-analysis",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "EDA for Policy Analysis",
+    "text": "EDA for Policy Analysis\nKey questions for census data:\n\nGeographic patterns: Are problems concentrated in certain areas?\nPopulation relationships: How does size affect data quality?\nDemographic patterns: Are certain communities systematically different?\nTemporal trends: How do patterns change over time?\nData integrity: Where might survey bias affect results?\nReliability assessment: Which estimates should we trust?"
+  },
+  {
+    "objectID": "lecture/week3.html#why-join-data",
+    "href": "lecture/week3.html#why-join-data",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Why Join Data?",
+    "text": "Why Join Data?\nTo combining datasets of course:\n\nCensus demographics + Economic indicators\nSurvey responses + Geographic boundaries\n\nCurrent data + Historical trends\nAdministrative records + Survey data"
+  },
+  {
+    "objectID": "lecture/week3.html#types-of-joins-tabular",
+    "href": "lecture/week3.html#types-of-joins-tabular",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Types of Joins (tabular)",
+    "text": "Types of Joins (tabular)\nFour main types in dplyr:\n\nleft_join() - Keep all rows from left dataset\nright_join() - Keep all rows from right dataset\n\ninner_join() - Keep only rows that match in both\nfull_join() - Keep all rows from both datasets\n\nMost common: left_join() to add columns to your main dataset"
+  },
+  {
+    "objectID": "lecture/week3.html#live-demo-joining-census-tables",
+    "href": "lecture/week3.html#live-demo-joining-census-tables",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Live Demo: Joining Census Tables",
+    "text": "Live Demo: Joining Census Tables\n\n\n# A tibble: 6 × 6\n  GEOID NAME                    median_income income_moe college_pop college_moe\n  &lt;chr&gt; &lt;chr&gt;                           &lt;dbl&gt;      &lt;dbl&gt;       &lt;dbl&gt;       &lt;dbl&gt;\n1 42001 Adams County, Pennsylv…         78975       3334       10195         761\n2 42003 Allegheny County, Penn…         72537        869      229538        3311\n3 42005 Armstrong County, Penn…         61011       2202        6171         438\n4 42007 Beaver County, Pennsyl…         67194       1531       22588        1012\n5 42009 Bedford County, Pennsy…         58337       2606        3396         307\n6 42011 Berks County, Pennsylv…         74617       1191       50120        1654"
+  },
+  {
+    "objectID": "lecture/week3.html#checking-join-results-and-data-quality",
+    "href": "lecture/week3.html#checking-join-results-and-data-quality",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Checking Join Results and Data Quality",
+    "text": "Checking Join Results and Data Quality\nAlways verify joins AND assess combined reliability:\n\n\nIncome data rows: 67 \n\n\nEducation data rows: 67 \n\n\nCombined data rows: 67 \n\n\n# A tibble: 1 × 2\n  missing_income missing_education\n           &lt;int&gt;             &lt;int&gt;\n1              0                 0\n\n\n# A tibble: 6 × 3\n  NAME                           income_cv college_cv\n  &lt;chr&gt;                              &lt;dbl&gt;      &lt;dbl&gt;\n1 Adams County, Pennsylvania          4.22       7.46\n2 Allegheny County, Pennsylvania      1.20       1.44\n3 Armstrong County, Pennsylvania      3.61       7.10\n4 Beaver County, Pennsylvania         2.28       4.48\n5 Bedford County, Pennsylvania        4.47       9.04\n6 Berks County, Pennsylvania          1.60       3.30"
+  },
+  {
+    "objectID": "lecture/week3.html#lab-structure-for-today",
+    "href": "lecture/week3.html#lab-structure-for-today",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Lab Structure for Today",
+    "text": "Lab Structure for Today\nYou’ll work through six exercises:\n\nFinding Census Variables - Learn to search for the data you need\nSingle Variable EDA - Explore distributions and identify outliers\nTwo Variable Relationships - Create meaningful scatter plots\nData Quality Visualization - Practice ethical uncertainty communication\nMultiple Variables - Color, faceting, and complex relationships\nData Integration - Join datasets and create publication-ready visualizations"
+  },
+  {
+    "objectID": "lecture/week3.html#skills-youll-practice",
+    "href": "lecture/week3.html#skills-youll-practice",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Skills You’ll Practice",
+    "text": "Skills You’ll Practice\nggplot2 fundamentals:\n\nScatter plots, histograms, boxplots\nAesthetic mappings and customization\nProfessional themes and labels\n\nEDA workflow:\n\nDistribution analysis\nOutlier detection\n\nPattern identification\n\nEthical data practice:\n\nVisualizing and reporting margins of error\nUsing coefficient of variation to assess reliability"
+  },
+  {
+    "objectID": "lecture/week3.html#connection-to-professional-ethics",
+    "href": "lecture/week3.html#connection-to-professional-ethics",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Connection to Professional Ethics",
+    "text": "Connection to Professional Ethics\nBy the end of today, you’ll be able to:\n\nVisually assess data quality issues\nCreate compelling presentations of demographic patterns\nCommunicate statistical uncertainty ethically and clearly\nIntegrate multiple data sources"
+  },
+  {
+    "objectID": "lecture/week3.html#questions-before-we-begin",
+    "href": "lecture/week3.html#questions-before-we-begin",
+    "title": "Data Visualization & Exploratory Analysis",
+    "section": "Questions Before We Begin?",
+    "text": "Questions Before We Begin?\nReady for hands-on practice?\nRemember: Today’s skills build directly on Week 1-2 foundations:\n\nSame dplyr functions, now with visualization\nSame census data concepts, now with multiple tables\n\nLet’s create some beautiful graphs"
   }
 ]
