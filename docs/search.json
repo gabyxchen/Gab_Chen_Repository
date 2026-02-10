@@ -186,14 +186,14 @@
     "href": "lab/lab1/lab1.html#focus-area-selection",
     "title": "Lab 1: Census Data Quality for Policy Decisions",
     "section": "3.1 Focus Area Selection",
-    "text": "3.1 Focus Area Selection\nYour Task: Select 2-3 counties from your reliability analysis for detailed tract-level study.\nStrategy: Choose counties that represent different reliability levels (e.g., 1 high confidence, 1 moderate, 1 low confidence) to compare how data quality varies.\n\n# Use filter() to select 2-3 counties from your county_reliability data\n# Store the selected counties in a variable called selected_counties\nselected_counties &lt;- pa_reliability %&gt;%\n  filter(moe_percentage &gt; 8)\n\n# Display the selected counties with their key characteristics\n# Show: county name, median income, MOE percentage, reliability category\nprint(selected_counties) %&gt;%\nselect(county_name, medincE, moe_percentage, reliability)\n\n# A tibble: 2 × 9\n  GEOID NAME          totpopE totpopM medincE medincM county_name moe_percentage\n  &lt;chr&gt; &lt;chr&gt;           &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;                &lt;dbl&gt;\n1 42053 Forest Count…    6959      NA   46188    4612 Forest                9.99\n2 42113 Sullivan Cou…    5880      NA   62910    5821 Sullivan              9.25\n# ℹ 1 more variable: reliability &lt;chr&gt;\n\n\n# A tibble: 2 × 4\n  county_name medincE moe_percentage reliability\n  &lt;chr&gt;         &lt;dbl&gt;          &lt;dbl&gt; &lt;chr&gt;      \n1 Forest        46188           9.99 Moderate   \n2 Sullivan      62910           9.25 Moderate   \n\n\nComment on the output: [Using filter() to select a certain number of observations requires you to have a basic understanding of your data frame.]"
+    "text": "3.1 Focus Area Selection\nYour Task: Select 2-3 counties from your reliability analysis for detailed tract-level study.\nStrategy: Choose counties that represent different reliability levels (e.g., 1 high confidence, 1 moderate, 1 low confidence) to compare how data quality varies.\n\n# Use filter() to select 2-3 counties from your county_reliability data\n# Store the selected counties in a variable called selected_counties\nselected_counties &lt;- pa_reliability %&gt;%\n  group_by(reliability) %&gt;%\n  slice(1)\n\n# Display the selected counties with their key characteristics\n# Show: county name, median income, MOE percentage, reliability category\nprint(selected_counties) %&gt;%\nselect(county_name, medincE, moe_percentage, reliability)\n\n# A tibble: 2 × 9\n# Groups:   reliability [2]\n  GEOID NAME          totpopE totpopM medincE medincM county_name moe_percentage\n  &lt;chr&gt; &lt;chr&gt;           &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;                &lt;dbl&gt;\n1 42001 Adams County…  104604      NA   78975    3334 Adams                 4.22\n2 42023 Cameron Coun…    4536      NA   46186    2605 Cameron               5.64\n# ℹ 1 more variable: reliability &lt;chr&gt;\n\n\n# A tibble: 2 × 4\n# Groups:   reliability [2]\n  county_name medincE moe_percentage reliability    \n  &lt;chr&gt;         &lt;dbl&gt;          &lt;dbl&gt; &lt;chr&gt;          \n1 Adams         78975           4.22 High Confidence\n2 Cameron       46186           5.64 Moderate       \n\n\nComment on the output: [Using filter() to select a certain number of observations requires you to have a basic understanding of your data frame.One county with the highest MOE percentage is selected from each reliability group.]"
   },
   {
     "objectID": "lab/lab1/lab1.html#tract-level-demographics",
     "href": "lab/lab1/lab1.html#tract-level-demographics",
     "title": "Lab 1: Census Data Quality for Policy Decisions",
     "section": "3.2 Tract-Level Demographics",
-    "text": "3.2 Tract-Level Demographics\nYour Task: Get demographic data for census tracts in your selected counties.\nRequirements: - Geography: tract level - Variables: white alone (B03002_003), Black/African American (B03002_004), Hispanic/Latino (B03002_012), total population (B03002_001) - Use the same state and year as before - Output format: wide - Challenge: You’ll need county codes, not names. Look at the GEOID patterns in your county data for hints.\n\n# Define your race/ethnicity variables with descriptive names\nrace_vars &lt;- c(\n  white = \"B03002_003\",  # white alone\n  black = \"B03002_004\", # Black/African American\n  his_lat = \"B03002_012\", # Hispanic/Latino\n  totpop = \"B03002_001\" # total population\n)\n# Use get_acs() to retrieve tract-level data\npa_data &lt;- get_acs(\n  geography = \"tract\",\n  variables = race_vars,\n  state = \"42\",\n  year = 2022,\n  output = \"wide\"\n)\n# Hint: You may need to specify county codes in the county parameter\n\n# Calculate percentage of each group using mutate()\n# Create percentages for white, Black, and Hispanic populations\npct_race &lt;- pa_data %&gt;%\n  mutate(\n    pct_white = round(whiteE / totpopE, 3) * 100,\n    pct_black = round(blackE / totpopE, 3) * 100,\n    pct_his_lat = round(his_latE / totpopE, 3) * 100\n  )\n\n# Add readable tract and county name columns using str_extract() or similar\npct_race_clean &lt;- pct_race %&gt;%\n  mutate(\n    TRACT = str_extract(NAME, \"\\\\d+.?\\\\d+\" ),\n    COUNTY = str_extract(NAME, \"(?&lt;=;)\\\\s[^ ]+\")\n    )"
+    "text": "3.2 Tract-Level Demographics\nYour Task: Get demographic data for census tracts in your selected counties.\nRequirements: - Geography: tract level - Variables: white alone (B03002_003), Black/African American (B03002_004), Hispanic/Latino (B03002_012), total population (B03002_001) - Use the same state and year as before - Output format: wide - Challenge: You’ll need county codes, not names. Look at the GEOID patterns in your county data for hints.\n\n# Define your race/ethnicity variables with descriptive names\nrace_vars &lt;- c(\n  white = \"B03002_003\",  # white alone\n  black = \"B03002_004\", # Black/African American\n  his_lat = \"B03002_012\", # Hispanic/Latino\n  totpop = \"B03002_001\" # total population\n)\n# Use get_acs() to retrieve tract-level data\n# Census API bug, failed at Forest and Pike County\n# To avoid the Census API bug, choose Adams and Cameron County\n\ncounty_fip &lt;- c(\"42001\", \"42023\") # Adams and Cameron\n\ntract_data &lt;- get_acs(\n  geography = \"tract\",\n  variables = race_vars,\n  state = \"PA\",\n  year = 2022,\n  survey = \"acs5\",\n  output = \"wide\"\n)\n# Hint: You may need to specify county codes in the county parameter\n\n# Calculate percentage of each group using mutate()\n# Create percentages for white, Black, and Hispanic populations\npct_race &lt;- tract_data %&gt;%\n  mutate(\n    pct_white = round(whiteE / totpopE, 3) * 100,\n    pct_black = round(blackE / totpopE, 3) * 100,\n    pct_his_lat = round(his_latE / totpopE, 3) * 100\n  )\n\n# Add readable tract and county name columns using str_extract() or similar\npct_race_clean &lt;- pct_race %&gt;%\n  mutate(\n    TRACT = str_extract(NAME, \"\\\\d+.?\\\\d+\" ),\n    COUNTY = str_extract(NAME, \"(?&lt;=;)\\\\s[^ ]+\")\n    )"
   },
   {
     "objectID": "lab/lab1/lab1.html#demographic-analysis",
@@ -214,28 +214,28 @@
     "href": "lab/lab1/lab1.html#pattern-analysis",
     "title": "Lab 1: Census Data Quality for Policy Decisions",
     "section": "4.2 Pattern Analysis",
-    "text": "4.2 Pattern Analysis\nYour Task: Investigate whether data quality problems are randomly distributed or concentrated in certain types of communities.\n\n# Group tracts by whether they have high MOE issues\n# Categorize MOE &gt; 100 as \"high\", MOE &lt;= 100 as \"low\"\nflag_tract &lt;- flag_tract %&gt;%\n  mutate(\n    MOE_category = case_when(\n      MOE_white &gt; 100 | MOE_black &gt; 100 | MOE_his_lat &gt; 100 ~ \"high\",\n      MOE_white &lt;= 100 | MOE_black &lt;= 100 | MOE_his_lat &lt;= 100 ~ \"low\",\n    )\n  )\n\n# Calculate average characteristics for each group:\n# - population size, demographic percentages\n# Use group_by() and summarize() to create this comparison\nflag_tract %&gt;%\ngroup_by(MOE_category) %&gt;%\nsummarise(\n  avg_pop = mean(totpopE, na.rm = TRUE),\n  avg_pct_white = mean(pct_white, na.rm = TRUE),\n  avg_pct_black = mean(pct_black, na.rm = TRUE),\n  avg_pct_hispanic = mean(pct_his_lat, na.rm = TRUE)\n) %&gt;%\n\n# Create a professional table showing the patterns\nkable(\n  col.names = c(\n    \"MOE Issue Category\",\n    \"Average Population Size\",\n    \"Average percentage of white population (%)\",\n    \"Average percentage of black population (%)\",\n    \"Average percentage of hispanic or latino population (%)\"\n  ),\n  caption = \"Average Demographic Characteristics for Tracts with Different Levels of MOE Issues\"\n)\n\n\nAverage Demographic Characteristics for Tracts with Different Levels of MOE Issues\n\n\n\n\n\n\n\n\n\nMOE Issue Category\nAverage Population Size\nAverage percentage of white population (%)\nAverage percentage of black population (%)\nAverage percentage of hispanic or latino population (%)\n\n\n\n\nhigh\n3572.054\n82.31389\n7.841956\n4.142934\n\n\nlow\n4068.701\n63.09065\n15.425639\n13.073046\n\n\n\n\n\nPattern Analysis: [Describe any patterns you observe. Do certain types of communities have less reliable data? What might explain this?]"
+    "text": "4.2 Pattern Analysis\nYour Task: Investigate whether data quality problems are randomly distributed or concentrated in certain types of communities.\n\n# Group tracts by whether they have high MOE issues\n# Categorize MOE &gt; 100 as \"high\", MOE &lt;= 100 as \"low\"\nflag_tract &lt;- flag_tract %&gt;%\n  mutate(\n    MOE_category = case_when(\n      MOE_white &gt; 100 | MOE_black &gt; 100 | MOE_his_lat &gt; 100 ~ \"high\",\n      MOE_white &lt;= 100 | MOE_black &lt;= 100 | MOE_his_lat &lt;= 100 ~ \"low\",\n    )\n  )\n\n# Calculate average characteristics for each group:\n# - population size, demographic percentages\n# Use group_by() and summarize() to create this comparison\nflag_tract %&gt;%\ngroup_by(MOE_category) %&gt;%\nsummarise(\n  avg_pop = round(mean(totpopE, na.rm = TRUE), 0),\n  avg_pct_white = round(mean(pct_white, na.rm = TRUE), 1),\n  avg_pct_black = round(mean(pct_black, na.rm = TRUE), 1),\n  avg_pct_hispanic = round(mean(pct_his_lat, na.rm = TRUE), 1)\n) %&gt;%\n\n# Create a professional table showing the patterns\nkable(\n  col.names = c(\n    \"MOE Issue Category\",\n    \"Average Population Size\",\n    \"Average percentage of white population (%)\",\n    \"Average percentage of black population (%)\",\n    \"Average percentage of hispanic or latino population (%)\"\n  ),\n  caption = \"Average Demographic Characteristics for Tracts with Different Levels of MOE Issues\"\n)\n\n\nAverage Demographic Characteristics for Tracts with Different Levels of MOE Issues\n\n\n\n\n\n\n\n\n\nMOE Issue Category\nAverage Population Size\nAverage percentage of white population (%)\nAverage percentage of black population (%)\nAverage percentage of hispanic or latino population (%)\n\n\n\n\nhigh\n3572\n82.3\n7.8\n4.1\n\n\nlow\n4069\n63.1\n15.4\n13.1\n\n\n\n\n\nPattern Analysis: [Tracts with high MOE issues have a smaller population size and more demographically homogeneous, with a larger share of white presence and smaller share of black and hispanic or latino population. Tracts with smaller population size have smaller survey samples. More homogeneous tracts have limited variation across demographic categories. Both of the cases increase statistical uncertainty and inflate margins of error.]"
   },
   {
     "objectID": "lab/lab1/lab1.html#analysis-integration-and-professional-summary",
     "href": "lab/lab1/lab1.html#analysis-integration-and-professional-summary",
     "title": "Lab 1: Census Data Quality for Policy Decisions",
     "section": "5.1 Analysis Integration and Professional Summary",
-    "text": "5.1 Analysis Integration and Professional Summary\nYour Task: Write an executive summary that integrates findings from all four analyses.\nExecutive Summary Requirements: 1. Overall Pattern Identification: What are the systematic patterns across all your analyses? 2. Equity Assessment: Which communities face the greatest risk of algorithmic bias based on your findings? 3. Root Cause Analysis: What underlying factors drive both data quality issues and bias risk? 4. Strategic Recommendations: What should the Department implement to address these systematic issues?\nExecutive Summary:\n[Your integrated 4-paragraph summary here]"
+    "text": "5.1 Analysis Integration and Professional Summary\nYour Task: Write an executive summary that integrates findings from all four analyses.\nExecutive Summary Requirements: 1. Overall Pattern Identification: What are the systematic patterns across all your analyses? 2. Equity Assessment: Which communities face the greatest risk of algorithmic bias based on your findings? 3. Root Cause Analysis: What underlying factors drive both data quality issues and bias risk? 4. Strategic Recommendations: What should the Department implement to address these systematic issues?\nExecutive Summary:\n[Across the analysis of census data reliability at county levels in Pennsylvania, approximately 85% of the state’s 67 counties have a margin of error below 5% (“High Confidence”). Approximately 15% of all counties have a margin of error between 5% to 10% (“Moderate”).No county exhibits a margin of error exceeding 10% (“Low Confidence”), indicating that median income estimates at the county level are generally reliable. One county was selected from each MOE reliability category to conduct a tract-level analysis of data reliability. Examining the margins of error associated with racial population shares at the census tract level reveals that many tracts in Pennsylvania experience some degree of MOE-related data quality issues. On average, tracts with higher MOE issues tend to have larger population sizes and more racially homogeneous compositions, characterized by a higher proportion of White residents and smaller shares of Black and Hispanic or Latino populations. These patterns suggest that higher MOE issues are driven by both total population size and the interaction between survey sampling limitations and small subgroup populations, particularly in racially homogeneous tracts. When using census data to inform policy decisions, special care should be taken in interpreting estimates for these communities to avoid introducing statistical bias into policy design and implementation: To address systematic MOE issues, the Department should integrate data quality metrics directly into analytic and algorithmic workflows, particularly for tract-level decision-making. The following strategic recommendations outline practical steps to mitigate data uncertainty and reduce the risk of biased policy outcomes: 1. Incorporate data quality thresholds into decision-making. 2. Supplement ACS data with local or administrative data. 3. Prioritize transparency and documentation.]"
   },
   {
     "objectID": "lab/lab1/lab1.html#specific-recommendations",
     "href": "lab/lab1/lab1.html#specific-recommendations",
     "title": "Lab 1: Census Data Quality for Policy Decisions",
     "section": "6.3 Specific Recommendations",
-    "text": "6.3 Specific Recommendations\nYour Task: Create a decision framework for algorithm implementation.\n\n# Create a summary table using your county reliability data\n# Include: county name, median income, MOE percentage, reliability category\n\n# Add a new column with algorithm recommendations using case_when():\n# - High Confidence: \"Safe for algorithmic decisions\"\n# - Moderate Confidence: \"Use with caution - monitor outcomes\"  \n# - Low Confidence: \"Requires manual review or additional data\"\n\n# Format as a professional table with kable()\n\nKey Recommendations:\nYour Task: Use your analysis results to provide specific guidance to the department.\n\nCounties suitable for immediate algorithmic implementation: [List counties with high confidence data and explain why they’re appropriate]\nCounties requiring additional oversight: [List counties with moderate confidence data and describe what kind of monitoring would be needed]\nCounties needing alternative approaches: [List counties with low confidence data and suggest specific alternatives - manual review, additional surveys, etc.]"
+    "text": "6.3 Specific Recommendations\nYour Task: Create a decision framework for algorithm implementation.\n\n# Create a summary table using your county reliability data\n# Include: county name, median income, MOE percentage, reliability category\n\n# Add a new column with algorithm recommendations using case_when():\n# - High Confidence: \"Safe for algorithmic decisions\"\n# - Moderate Confidence: \"Use with caution - monitor outcomes\"  \n# - Low Confidence: \"Requires manual review or additional data\"\npa_recommendation &lt;- pa_reliability %&gt;%\n  mutate(\n    recommendation = case_when(\n      reliability == \"High Confidence\" ~ \"Safe for algorithmic decisions\",\n      reliability == \"Moderate\" ~ \"Use with caution - monitor outcomes\",\n      reliability == \"Low Confidence\" ~ \"Requires manual review or additional data\",\n      TRUE ~ NA_character_\n    )\n  ) %&gt;%\n  select(county_name, medincE, moe_percentage, reliability, recommendation)\n\n# Format as a professional table with kable()\npa_recommendation %&gt;%\n  \nkable(\n  col.names = c(\n    \"County\", \n    \"Median Income\", \n    \"MOE Percentage (%)\", \n    \"MOE reliability\", \n    \"Algorithm Recommendation\"\n  ),\n  caption = \"Algorithmic Use Recommendations Based on County-Level Data Reliability\"\n)\n\n\nAlgorithmic Use Recommendations Based on County-Level Data Reliability\n\n\n\n\n\n\n\n\n\nCounty\nMedian Income\nMOE Percentage (%)\nMOE reliability\nAlgorithm Recommendation\n\n\n\n\nAdams\n78975\n4.22\nHigh Confidence\nSafe for algorithmic decisions\n\n\nAllegheny\n72537\n1.20\nHigh Confidence\nSafe for algorithmic decisions\n\n\nArmstrong\n61011\n3.61\nHigh Confidence\nSafe for algorithmic decisions\n\n\nBeaver\n67194\n2.28\nHigh Confidence\nSafe for algorithmic decisions\n\n\nBedford\n58337\n4.47\nHigh Confidence\nSafe for algorithmic decisions\n\n\nBerks\n74617\n1.60\nHigh Confidence\nSafe for algorithmic decisions\n\n\nBlair\n59386\n3.47\nHigh Confidence\nSafe for algorithmic decisions\n\n\nBradford\n60650\n3.57\nHigh Confidence\nSafe for algorithmic decisions\n\n\nBucks\n107826\n1.41\nHigh Confidence\nSafe for algorithmic decisions\n\n\nButler\n82932\n2.61\nHigh Confidence\nSafe for algorithmic decisions\n\n\nCambria\n54221\n3.34\nHigh Confidence\nSafe for algorithmic decisions\n\n\nCameron\n46186\n5.64\nModerate\nUse with caution - monitor outcomes\n\n\nCarbon\n64538\n5.31\nModerate\nUse with caution - monitor outcomes\n\n\nCentre\n70087\n2.77\nHigh Confidence\nSafe for algorithmic decisions\n\n\nChester\n118574\n1.70\nHigh Confidence\nSafe for algorithmic decisions\n\n\nClarion\n58690\n4.37\nHigh Confidence\nSafe for algorithmic decisions\n\n\nClearfield\n56982\n2.79\nHigh Confidence\nSafe for algorithmic decisions\n\n\nClinton\n59011\n3.86\nHigh Confidence\nSafe for algorithmic decisions\n\n\nColumbia\n59457\n3.76\nHigh Confidence\nSafe for algorithmic decisions\n\n\nCrawford\n58734\n3.91\nHigh Confidence\nSafe for algorithmic decisions\n\n\nCumberland\n82849\n2.20\nHigh Confidence\nSafe for algorithmic decisions\n\n\nDauphin\n71046\n2.27\nHigh Confidence\nSafe for algorithmic decisions\n\n\nDelaware\n86390\n1.53\nHigh Confidence\nSafe for algorithmic decisions\n\n\nElk\n61672\n6.63\nModerate\nUse with caution - monitor outcomes\n\n\nErie\n59396\n2.55\nHigh Confidence\nSafe for algorithmic decisions\n\n\nFayette\n55579\n4.16\nHigh Confidence\nSafe for algorithmic decisions\n\n\nForest\n46188\n9.99\nModerate\nUse with caution - monitor outcomes\n\n\nFranklin\n71808\n3.00\nHigh Confidence\nSafe for algorithmic decisions\n\n\nFulton\n63153\n3.65\nHigh Confidence\nSafe for algorithmic decisions\n\n\nGreene\n66283\n6.41\nModerate\nUse with caution - monitor outcomes\n\n\nHuntingdon\n61300\n4.72\nHigh Confidence\nSafe for algorithmic decisions\n\n\nIndiana\n57170\n4.65\nHigh Confidence\nSafe for algorithmic decisions\n\n\nJefferson\n56607\n3.41\nHigh Confidence\nSafe for algorithmic decisions\n\n\nJuniata\n61915\n4.79\nHigh Confidence\nSafe for algorithmic decisions\n\n\nLackawanna\n63739\n2.58\nHigh Confidence\nSafe for algorithmic decisions\n\n\nLancaster\n81458\n1.79\nHigh Confidence\nSafe for algorithmic decisions\n\n\nLawrence\n57585\n3.07\nHigh Confidence\nSafe for algorithmic decisions\n\n\nLebanon\n72532\n2.69\nHigh Confidence\nSafe for algorithmic decisions\n\n\nLehigh\n74973\n2.00\nHigh Confidence\nSafe for algorithmic decisions\n\n\nLuzerne\n60836\n2.35\nHigh Confidence\nSafe for algorithmic decisions\n\n\nLycoming\n63437\n4.39\nHigh Confidence\nSafe for algorithmic decisions\n\n\nMcKean\n57861\n4.75\nHigh Confidence\nSafe for algorithmic decisions\n\n\nMercer\n57353\n3.63\nHigh Confidence\nSafe for algorithmic decisions\n\n\nMifflin\n58012\n3.43\nHigh Confidence\nSafe for algorithmic decisions\n\n\nMonroe\n80656\n3.17\nHigh Confidence\nSafe for algorithmic decisions\n\n\nMontgomery\n107441\n1.27\nHigh Confidence\nSafe for algorithmic decisions\n\n\nMontour\n72626\n7.09\nModerate\nUse with caution - monitor outcomes\n\n\nNorthampton\n82201\n1.93\nHigh Confidence\nSafe for algorithmic decisions\n\n\nNorthumberland\n55952\n2.67\nHigh Confidence\nSafe for algorithmic decisions\n\n\nPerry\n76103\n3.17\nHigh Confidence\nSafe for algorithmic decisions\n\n\nPhiladelphia\n57537\n1.38\nHigh Confidence\nSafe for algorithmic decisions\n\n\nPike\n76416\n4.90\nHigh Confidence\nSafe for algorithmic decisions\n\n\nPotter\n56491\n4.42\nHigh Confidence\nSafe for algorithmic decisions\n\n\nSchuylkill\n63574\n2.40\nHigh Confidence\nSafe for algorithmic decisions\n\n\nSnyder\n65914\n5.56\nModerate\nUse with caution - monitor outcomes\n\n\nSomerset\n57357\n2.78\nHigh Confidence\nSafe for algorithmic decisions\n\n\nSullivan\n62910\n9.25\nModerate\nUse with caution - monitor outcomes\n\n\nSusquehanna\n63968\n3.14\nHigh Confidence\nSafe for algorithmic decisions\n\n\nTioga\n59707\n3.23\nHigh Confidence\nSafe for algorithmic decisions\n\n\nUnion\n64914\n7.32\nModerate\nUse with caution - monitor outcomes\n\n\nVenango\n59278\n3.45\nHigh Confidence\nSafe for algorithmic decisions\n\n\nWarren\n57925\n5.19\nModerate\nUse with caution - monitor outcomes\n\n\nWashington\n74403\n2.38\nHigh Confidence\nSafe for algorithmic decisions\n\n\nWayne\n59240\n4.79\nHigh Confidence\nSafe for algorithmic decisions\n\n\nWestmoreland\n69454\n1.99\nHigh Confidence\nSafe for algorithmic decisions\n\n\nWyoming\n67968\n3.85\nHigh Confidence\nSafe for algorithmic decisions\n\n\nYork\n79183\n1.79\nHigh Confidence\nSafe for algorithmic decisions\n\n\n\n\n\nKey Recommendations:\nYour Task: Use your analysis results to provide specific guidance to the department.\n\nCounties suitable for immediate algorithmic implementation: [Counties classified as High Confidence—with low MOE percentages—are appropriate for immediate use in algorithmic decision-making. In these counties, median income estimates are statistically reliable, reducing the risk that automated systems will misallocate resources or misclassify need. Algorithms applied in these contexts can be expected to perform consistently, provided routine validation checks remain in place. (Adams, Allegheny, Armstrong, Beaver, Bedford, etc.)]\nCounties requiring additional oversight: [Counties with Moderate Confidence data should be included in algorithmic workflows but paired with active monitoring and evaluation. In these areas, algorithmic outputs should be reviewed periodically against observed outcomes to detect potential bias or instability. Incorporating performance audits or sensitivity checks can help ensure that moderate data uncertainty does not translate into systematic policy errors. (Forest, Greene, Elk, Cameron, Carbon, etc.)]\nCounties needing alternative approaches: [Counties identified as Low Confidence require alternative approaches due to high margins of error and limited data reliability. For these counties, algorithmic outputs should not be used as the sole basis for decision-making. Instead, the Department should rely on manual review, aggregated or multi-year data, supplemental administrative records, or targeted local surveys to inform policy decisions and reduce the risk of statistical bias.]"
   },
   {
     "objectID": "lab/lab1/lab1.html#questions-for-further-investigation",
     "href": "lab/lab1/lab1.html#questions-for-further-investigation",
     "title": "Lab 1: Census Data Quality for Policy Decisions",
     "section": "Questions for Further Investigation",
-    "text": "Questions for Further Investigation\n[List 2-3 questions that your analysis raised that you’d like to explore further in future assignments. Consider questions about spatial patterns, time trends, or other demographic factors.]"
+    "text": "Questions for Further Investigation\n\nHow do MOE patterns vary spatially across Pennsylvania, and are high-uncertainty tracts geographically clustered in rural, suburban, or peripheral urban areas?\nHow do margins of error change over time, and are certain counties or tracts becoming more or less reliable?"
   },
   {
     "objectID": "lab/lab1/lab1.html#submission-checklist",
@@ -425,5 +425,803 @@
     "title": "Data Visualization & Exploratory Analysis",
     "section": "Questions Before We Begin?",
     "text": "Questions Before We Begin?\nReady for hands-on practice?\nRemember: Today’s skills build directly on Week 1-2 foundations:\n\nSame dplyr functions, now with visualization\nSame census data concepts, now with multiple tables\n\nLet’s create some beautiful graphs"
+  },
+  {
+    "objectID": "lecture/week3_lab_exercise.html",
+    "href": "lecture/week3_lab_exercise.html",
+    "title": "Week 3 In-Class Lab: Data Visualization and EDA",
+    "section": "",
+    "text": "# Load required packages\nlibrary(tidyverse)\nlibrary(tidycensus)\nlibrary(scales)\nlibrary(RColorBrewer)\n# Set your Census API key if you haven't already\ncensus_api_key(Sys.getenv(\"CENSUS_API_KEY\"))\n\n# We'll use Pennsylvania data for consistency with previous weeks\nstate_choice &lt;- \"PA\""
+  },
+  {
+    "objectID": "lecture/week3_lab_exercise.html#setup-and-data-loading",
+    "href": "lecture/week3_lab_exercise.html#setup-and-data-loading",
+    "title": "Week 3 In-Class Lab: Data Visualization and EDA",
+    "section": "",
+    "text": "# Load required packages\nlibrary(tidyverse)\nlibrary(tidycensus)\nlibrary(scales)\nlibrary(RColorBrewer)\n# Set your Census API key if you haven't already\ncensus_api_key(Sys.getenv(\"CENSUS_API_KEY\"))\n\n# We'll use Pennsylvania data for consistency with previous weeks\nstate_choice &lt;- \"PA\""
+  },
+  {
+    "objectID": "lecture/week3_lab_exercise.html#exercise-0-finding-census-variable-codes",
+    "href": "lecture/week3_lab_exercise.html#exercise-0-finding-census-variable-codes",
+    "title": "Week 3 In-Class Lab: Data Visualization and EDA",
+    "section": "Exercise 0: Finding Census Variable Codes",
+    "text": "Exercise 0: Finding Census Variable Codes\nThe Challenge: You know you want data on total population, median income, and median age, but you don’t know the specific Census variable codes. How do you find them?\n\n0.1 Load the Variable Dictionary\n\n# Load all available variables for ACS 5-year 2022\nacs_vars_2022 &lt;- load_variables(2022, \"acs5\", cache = TRUE)\n\n# Look at the structure\nglimpse(acs_vars_2022)\n\nRows: 28,152\nColumns: 4\n$ name      &lt;chr&gt; \"B01001A_001\", \"B01001A_002\", \"B01001A_003\", \"B01001A_004\", …\n$ label     &lt;chr&gt; \"Estimate!!Total:\", \"Estimate!!Total:!!Male:\", \"Estimate!!To…\n$ concept   &lt;chr&gt; \"Sex by Age (White Alone)\", \"Sex by Age (White Alone)\", \"Sex…\n$ geography &lt;chr&gt; \"tract\", \"tract\", \"tract\", \"tract\", \"tract\", \"tract\", \"tract…\n\nhead(acs_vars_2022)\n\n# A tibble: 6 × 4\n  name        label                                   concept          geography\n  &lt;chr&gt;       &lt;chr&gt;                                   &lt;chr&gt;            &lt;chr&gt;    \n1 B01001A_001 Estimate!!Total:                        Sex by Age (Whi… tract    \n2 B01001A_002 Estimate!!Total:!!Male:                 Sex by Age (Whi… tract    \n3 B01001A_003 Estimate!!Total:!!Male:!!Under 5 years  Sex by Age (Whi… tract    \n4 B01001A_004 Estimate!!Total:!!Male:!!5 to 9 years   Sex by Age (Whi… tract    \n5 B01001A_005 Estimate!!Total:!!Male:!!10 to 14 years Sex by Age (Whi… tract    \n6 B01001A_006 Estimate!!Total:!!Male:!!15 to 17 years Sex by Age (Whi… tract    \n\n\nWhat you see:\n\nname: The variable code (e.g., “B01003_001”)\nlabel: Human-readable description\nconcept: The broader table this variable belongs to\n\n\n\n0.2 Search for Population Variables\nYour Task: Find the variable code for total population.\n\n# Search for population-related variables\npopulation_vars &lt;- acs_vars_2022 %&gt;%\n  filter(str_detect(label, \"Total.*population\"))\n\n# Look at the results\nhead(population_vars, 10)\n\n# A tibble: 10 × 4\n   name       label                                            concept geography\n   &lt;chr&gt;      &lt;chr&gt;                                            &lt;chr&gt;   &lt;chr&gt;    \n 1 B16008_002 \"Estimate!!Total:!!Native population:\"           Citize… tract    \n 2 B16008_003 \"Estimate!!Total:!!Native population:!!5 to 17 … Citize… tract    \n 3 B16008_004 \"Estimate!!Total:!!Native population:!!5 to 17 … Citize… tract    \n 4 B16008_005 \"Estimate!!Total:!!Native population:!!5 to 17 … Citize… tract    \n 5 B16008_006 \"Estimate!!Total:!!Native population:!!5 to 17 … Citize… tract    \n 6 B16008_007 \"Estimate!!Total:!!Native population:!!5 to 17 … Citize… tract    \n 7 B16008_008 \"Estimate!!Total:!!Native population:!!5 to 17 … Citize… tract    \n 8 B16008_009 \"Estimate!!Total:!!Native population:!!5 to 17 … Citize… tract    \n 9 B16008_010 \"Estimate!!Total:!!Native population:!!5 to 17 … Citize… tract    \n10 B16008_011 \"Estimate!!Total:!!Native population:!!18 years… Citize… tract    \n\n# Or search in the concept field\npop_concept &lt;- acs_vars_2022 %&gt;%\n  filter(str_detect(concept, \"Total Population\"))\n\nhead(pop_concept)\n\n# A tibble: 6 × 4\n  name        label                             concept                geography\n  &lt;chr&gt;       &lt;chr&gt;                             &lt;chr&gt;                  &lt;chr&gt;    \n1 B01003_001  Estimate!!Total                   Total Population       block gr…\n2 B25008A_001 Estimate!!Total:                  Total Population in O… block gr…\n3 B25008A_002 Estimate!!Total:!!Owner occupied  Total Population in O… block gr…\n4 B25008A_003 Estimate!!Total:!!Renter occupied Total Population in O… block gr…\n5 B25008B_001 Estimate!!Total:                  Total Population in O… block gr…\n6 B25008B_002 Estimate!!Total:!!Owner occupied  Total Population in O… block gr…\n\n\nTip: Look for “Total” followed by “population” - usually B01003_001\n\n\n0.3 Search for Income Variables\nYour Task: Find median household income variables.\n\n# Search for median income\nincome_vars &lt;- acs_vars_2022 %&gt;%\n  filter(str_detect(label, \"[Mm]edian.*income\"))\n\n# Look specifically for household income\nhousehold_income &lt;- income_vars %&gt;%\n  filter(str_detect(label, \"household\"))\n\nprint(\"Household income variables:\")\n\n[1] \"Household income variables:\"\n\nhead(household_income)\n\n# A tibble: 6 × 4\n  name        label                                            concept geography\n  &lt;chr&gt;       &lt;chr&gt;                                            &lt;chr&gt;   &lt;chr&gt;    \n1 B10010_002  Estimate!!Median family income in the past 12 m… Median… tract    \n2 B10010_003  Estimate!!Median family income in the past 12 m… Median… tract    \n3 B19013A_001 Estimate!!Median household income in the past 1… Median… tract    \n4 B19013B_001 Estimate!!Median household income in the past 1… Median… tract    \n5 B19013C_001 Estimate!!Median household income in the past 1… Median… tract    \n6 B19013D_001 Estimate!!Median household income in the past 1… Median… tract    \n\n# Alternative: search by concept\nincome_concept &lt;- acs_vars_2022 %&gt;%\n  filter(str_detect(concept, \"Median Household Income\"))\n\nhead(income_concept)\n\n# A tibble: 6 × 4\n  name        label                                            concept geography\n  &lt;chr&gt;       &lt;chr&gt;                                            &lt;chr&gt;   &lt;chr&gt;    \n1 B19013A_001 Estimate!!Median household income in the past 1… Median… tract    \n2 B19013B_001 Estimate!!Median household income in the past 1… Median… tract    \n3 B19013C_001 Estimate!!Median household income in the past 1… Median… tract    \n4 B19013D_001 Estimate!!Median household income in the past 1… Median… tract    \n5 B19013E_001 Estimate!!Median household income in the past 1… Median… county   \n6 B19013F_001 Estimate!!Median household income in the past 1… Median… tract    \n\n\nPattern Recognition: Median household income is typically B19013_001\n\n\n0.4 Search for Age Variables\nYour Task: Find median age variables.\n[write the code below - first add a code chunk]\n\n\n0.5 Advanced Search Techniques\nYour Task: Learn more sophisticated search methods.\n\n# Search for multiple terms at once\nhousing_vars &lt;- acs_vars_2022 %&gt;%\n  filter(str_detect(label, \"[Mm]edian.*(rent|value)\"))\n\nprint(\"Housing cost variables:\")\n\n[1] \"Housing cost variables:\"\n\nhead(housing_vars, 10)\n\n# A tibble: 10 × 4\n   name         label                                          concept geography\n   &lt;chr&gt;        &lt;chr&gt;                                          &lt;chr&gt;   &lt;chr&gt;    \n 1 B07002PR_004 Estimate!!Median age --!!Total:!!Moved from d… Median… &lt;NA&gt;     \n 2 B07002_004   Estimate!!Median age --!!Total:!!Moved from d… Median… tract    \n 3 B07002_005   Estimate!!Median age --!!Total:!!Moved from d… Median… tract    \n 4 B07011PR_004 Estimate!!Median income in the past 12 months… Median… &lt;NA&gt;     \n 5 B07011_004   Estimate!!Median income in the past 12 months… Median… tract    \n 6 B07011_005   Estimate!!Median income in the past 12 months… Median… tract    \n 7 B07402PR_004 Estimate!!Median age --!!Total living in area… Median… &lt;NA&gt;     \n 8 B07402_004   Estimate!!Median age --!!Total living in area… Median… county   \n 9 B07402_005   Estimate!!Median age --!!Total living in area… Median… county   \n10 B07411PR_004 Estimate!!Median income in the past 12 months… Median… &lt;NA&gt;     \n\n# Search excluding certain terms\nincome_not_family &lt;- acs_vars_2022 %&gt;%\n  filter(str_detect(label, \"[Mm]edian.*income\") & \n         !str_detect(label, \"family\"))\n\nprint(\"Income variables (not family income):\")\n\n[1] \"Income variables (not family income):\"\n\nhead(income_not_family)\n\n# A tibble: 6 × 4\n  name         label                                           concept geography\n  &lt;chr&gt;        &lt;chr&gt;                                           &lt;chr&gt;   &lt;chr&gt;    \n1 B06011PR_001 Estimate!!Median income in the past 12 months … Median… &lt;NA&gt;     \n2 B06011PR_002 Estimate!!Median income in the past 12 months … Median… &lt;NA&gt;     \n3 B06011PR_003 Estimate!!Median income in the past 12 months … Median… &lt;NA&gt;     \n4 B06011PR_004 Estimate!!Median income in the past 12 months … Median… &lt;NA&gt;     \n5 B06011PR_005 Estimate!!Median income in the past 12 months … Median… &lt;NA&gt;     \n6 B06011_001   Estimate!!Median income in the past 12 months … Median… tract    \n\n# Case-insensitive search using regex\neducation_vars &lt;- acs_vars_2022 %&gt;%\n  filter(str_detect(label, regex(\"bachelor\", ignore_case = TRUE)))\n\nprint(\"Education variables:\")\n\n[1] \"Education variables:\"\n\nhead(education_vars, 5)\n\n# A tibble: 5 × 4\n  name         label                                           concept geography\n  &lt;chr&gt;        &lt;chr&gt;                                           &lt;chr&gt;   &lt;chr&gt;    \n1 B06009PR_005 Estimate!!Total:!!Bachelor's degree             Place … &lt;NA&gt;     \n2 B06009PR_011 Estimate!!Total:!!Born in Puerto Rico:!!Bachel… Place … &lt;NA&gt;     \n3 B06009PR_017 Estimate!!Total:!!Born in the United States:!!… Place … &lt;NA&gt;     \n4 B06009PR_023 Estimate!!Total:!!Native; born elsewhere:!!Bac… Place … &lt;NA&gt;     \n5 B06009PR_029 Estimate!!Total:!!Foreign born:!!Bachelor's de… Place … &lt;NA&gt;     \n\n\n\n\n0.6 Interactive Exploration\nYour Task: Use RStudio’s viewer for easier searching.\n\n# Open the full variable list in RStudio viewer\n# This opens a searchable data table\nView(acs_vars_2022)\n\n# Pro tip: You can also search specific table groups\n# B01 = Age and Sex\n# B19 = Income  \n# B25 = Housing\ntable_b19 &lt;- acs_vars_2022 %&gt;%\n  filter(str_detect(name, \"^B19\"))  # ^ means \"starts with\"\n\nprint(\"All B19 (Income) table variables:\")\n\n[1] \"All B19 (Income) table variables:\"\n\nhead(table_b19, 10)\n\n# A tibble: 10 × 4\n   name        label                                concept            geography\n   &lt;chr&gt;       &lt;chr&gt;                                &lt;chr&gt;              &lt;chr&gt;    \n 1 B19001A_001 Estimate!!Total:                     Household Income … tract    \n 2 B19001A_002 Estimate!!Total:!!Less than $10,000  Household Income … tract    \n 3 B19001A_003 Estimate!!Total:!!$10,000 to $14,999 Household Income … tract    \n 4 B19001A_004 Estimate!!Total:!!$15,000 to $19,999 Household Income … tract    \n 5 B19001A_005 Estimate!!Total:!!$20,000 to $24,999 Household Income … tract    \n 6 B19001A_006 Estimate!!Total:!!$25,000 to $29,999 Household Income … tract    \n 7 B19001A_007 Estimate!!Total:!!$30,000 to $34,999 Household Income … tract    \n 8 B19001A_008 Estimate!!Total:!!$35,000 to $39,999 Household Income … tract    \n 9 B19001A_009 Estimate!!Total:!!$40,000 to $44,999 Household Income … tract    \n10 B19001A_010 Estimate!!Total:!!$45,000 to $49,999 Household Income … tract    \n\n\n\n\n0.7 Verify Your Variable Choices\nYour Task: Test your variables by getting a small sample of data.\n\n# Test the variables you found\ntest_vars &lt;- c(\n  total_pop = \"B01003_001\",      # Total population\n  median_income = \"B19013_001\",  # Median household income\n  median_age = \"B01002_001\"      # Median age\n)\n\n# Get data for just one state to test\ntest_data &lt;- get_acs(\n  geography = \"state\",\n  variables = test_vars,\n  state = \"PA\",\n  year = 2022\n)\n\n# Check that you got what you expected\ntest_data\n\n# A tibble: 3 × 5\n  GEOID NAME         variable        estimate   moe\n  &lt;chr&gt; &lt;chr&gt;        &lt;chr&gt;              &lt;dbl&gt; &lt;dbl&gt;\n1 42    Pennsylvania median_age          40.8   0.1\n2 42    Pennsylvania total_pop     12989208    NA  \n3 42    Pennsylvania median_income    73170   347  \n\n\n\n\n0.8 Common Variable Patterns\nReference guide for future use:\n\n# Common patterns to remember:\ncommon_variables &lt;- tribble(\n  ~concept, ~typical_code, ~description,\n  \"Total Population\", \"B01003_001\", \"Total population\",\n  \"Median Age\", \"B01002_001\", \"Median age of population\", \n  \"Median HH Income\", \"B19013_001\", \"Median household income\",\n  \"White Population\", \"B03002_003\", \"White alone population\",\n  \"Black Population\", \"B03002_004\", \"Black/African American alone\",\n  \"Hispanic Population\", \"B03002_012\", \"Hispanic or Latino population\",\n  \"Bachelor's Degree\", \"B15003_022\", \"Bachelor's degree or higher\",\n  \"Median Rent\", \"B25058_001\", \"Median contract rent\",\n  \"Median Home Value\", \"B25077_001\", \"Median value owner-occupied\"\n)\n\nprint(\"Common Census Variables:\")\n\n[1] \"Common Census Variables:\"\n\ncommon_variables\n\n# A tibble: 9 × 3\n  concept             typical_code description                  \n  &lt;chr&gt;               &lt;chr&gt;        &lt;chr&gt;                        \n1 Total Population    B01003_001   Total population             \n2 Median Age          B01002_001   Median age of population     \n3 Median HH Income    B19013_001   Median household income      \n4 White Population    B03002_003   White alone population       \n5 Black Population    B03002_004   Black/African American alone \n6 Hispanic Population B03002_012   Hispanic or Latino population\n7 Bachelor's Degree   B15003_022   Bachelor's degree or higher  \n8 Median Rent         B25058_001   Median contract rent         \n9 Median Home Value   B25077_001   Median value owner-occupied  \n\n\nKey Tips for Variable Hunting:\n\nStart with concepts - search for the topic you want (income, age, housing)\nLook for “Median” vs “Mean” - median is usually more policy-relevant\nCheck the universe - some variables are for “households,” others for “population”\nTest with small data before running large queries\nBookmark useful variables for future projects (type them in your weekly notes!)"
+  },
+  {
+    "objectID": "lecture/week3_lab_exercise.html#exercise-1-single-variable-eda",
+    "href": "lecture/week3_lab_exercise.html#exercise-1-single-variable-eda",
+    "title": "Week 3 In-Class Lab: Data Visualization and EDA",
+    "section": "Exercise 1: Single Variable EDA",
+    "text": "Exercise 1: Single Variable EDA\n\n1.1 Load and Inspect Data\n\n# Get county-level data for your state\ncounty_data &lt;- get_acs(\n  geography = \"county\",\n  variables = c(\n    total_pop = \"B01003_001\",       # Total population\n    median_income = \"B19013_001\",   # Median household income\n    median_age = \"B01002_001\"       # Median age\n  ),\n  state = state_choice,\n  year = 2022,\n  output = \"wide\"\n)\n\n# Clean county names\ncounty_data &lt;- county_data %&gt;%\n  mutate(county_name = str_remove(NAME, paste0(\", \", state_choice)))\n\n# Basic inspection\nglimpse(county_data)\n\nRows: 67\nColumns: 9\n$ GEOID          &lt;chr&gt; \"42001\", \"42003\", \"42005\", \"42007\", \"42009\", \"42011\", \"…\n$ NAME           &lt;chr&gt; \"Adams County, Pennsylvania\", \"Allegheny County, Pennsy…\n$ total_popE     &lt;dbl&gt; 104604, 1245310, 65538, 167629, 47613, 428483, 122640, …\n$ total_popM     &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…\n$ median_incomeE &lt;dbl&gt; 78975, 72537, 61011, 67194, 58337, 74617, 59386, 60650,…\n$ median_incomeM &lt;dbl&gt; 3334, 869, 2202, 1531, 2606, 1191, 2058, 2167, 1516, 21…\n$ median_ageE    &lt;dbl&gt; 43.8, 40.6, 47.0, 44.9, 47.3, 39.9, 42.9, 43.9, 44.0, 4…\n$ median_ageM    &lt;dbl&gt; 0.2, 0.1, 0.2, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, …\n$ county_name    &lt;chr&gt; \"Adams County, Pennsylvania\", \"Allegheny County, Pennsy…\n\n\n\n\n1.2 Explore Income Distribution\nYour Task: Create a histogram of median household income and describe what you see.\n\n# Create histogram of median income\nggplot(county_data) +\n  aes(x = median_incomeE) +\n  geom_histogram(bins = 15, fill = \"steelblue\", alpha = 0.7) +\n  labs(\n    title = \"Distribution of Median Household Income\",\n    x = \"Median Household Income ($)\",\n    y = \"Number of Counties\"\n  ) +\n  theme_minimal() +\n  scale_x_continuous(labels = dollar)\n\n\n\n\n\n\n\n\n\n\n1.3 Box Plot for Outlier Detection\nYour Task: Create a boxplot to identify specific outlier counties.\n\n# Box plot to see outliers clearly\nggplot(county_data) +\n  aes(y = median_incomeE) +\n  geom_boxplot(fill = \"lightblue\", width = 0.5) +\n  labs(\n    title = \"Median Income Distribution with Outliers\",\n    y = \"Median Household Income ($)\"\n  ) +\n  theme_minimal() +\n  scale_y_continuous(labels = dollar)\n\n\n\n\n\n\n\n# Identify the outlier counties\nincome_outliers &lt;- county_data %&gt;%\n  mutate(\n    Q1 = quantile(median_incomeE, 0.25, na.rm = TRUE),\n    Q3 = quantile(median_incomeE, 0.75, na.rm = TRUE),\n    IQR = Q3 - Q1,\n    outlier = median_incomeE &lt; (Q1 - 1.5 * IQR) | median_incomeE &gt; (Q3 + 1.5 * IQR)\n  ) %&gt;%\n  filter(outlier) %&gt;%\n  select(county_name, median_incomeE)\n\nprint(\"Outlier counties:\")\n\n[1] \"Outlier counties:\"\n\nincome_outliers\n\n# A tibble: 3 × 2\n  county_name                     median_incomeE\n  &lt;chr&gt;                                    &lt;dbl&gt;\n1 Bucks County, Pennsylvania              107826\n2 Chester County, Pennsylvania            118574\n3 Montgomery County, Pennsylvania         107441\n\n\n\n\n1.4 Challenge Exercise: Population Distribution\nYour Task: Create your own visualization of population distribution and identify outliers.\nRequirements:\n\nCreate a histogram of total population (total_popE)\nUse a different color than the income example (try “darkgreen” or “purple”)\nAdd appropriate labels and title\nCreate a boxplot to identify population outliers\nFind and list the 3 most populous and 3 least populous counties\n\n\nggplot(county_data) +\n  aes(x = total_popE) +\n  geom_histogram(bins = 10, fill = \"purple\", alpha = 0.7) +\n  labs(\n    title = \"Distribution of Total Population\",\n    x = \"Total Population\",\n    y = \"Number of Counties\"\n  ) +\n  theme_minimal()\n\n\n\n\n\n\n\n\n\n# Box plot to see outliers clearly\nggplot(county_data) +\n  aes(y = total_popE) +\n  geom_boxplot(fill = \"purple\", width = 0.5) +\n  labs(\n    title = \"Total Population Distribution with Outliers\",\n    y = \"Total Population\"\n  ) +\n  theme_minimal() +\n  scale_y_continuous()\n\n\n\n\n\n\n\n# Identify the outlier counties\npop_outliers &lt;- county_data %&gt;%\n  mutate(\n    Q1 = quantile(total_popE, 0.25, na.rm = TRUE),\n    Q3 = quantile(total_popE, 0.75, na.rm = TRUE),\n    IQR = Q3 - Q1,\n    outlier = total_popE &lt; (Q1 - 1.5 * IQR) | total_popE &gt; (Q3 + 1.5 * IQR)\n  ) %&gt;%\n  filter(outlier) %&gt;%\n  select(county_name, total_popE)\n\nprint(\"Outlier counties:\")\n\n[1] \"Outlier counties:\"\n\npop_outliers\n\n# A tibble: 7 × 2\n  county_name                       total_popE\n  &lt;chr&gt;                                  &lt;dbl&gt;\n1 Allegheny County, Pennsylvania       1245310\n2 Bucks County, Pennsylvania            645163\n3 Chester County, Pennsylvania          536474\n4 Delaware County, Pennsylvania         575312\n5 Lancaster County, Pennsylvania        553202\n6 Montgomery County, Pennsylvania       856399\n7 Philadelphia County, Pennsylvania    1593208"
+  },
+  {
+    "objectID": "lecture/week3_lab_exercise.html#exercise-2-two-variable-relationships",
+    "href": "lecture/week3_lab_exercise.html#exercise-2-two-variable-relationships",
+    "title": "Week 3 In-Class Lab: Data Visualization and EDA",
+    "section": "Exercise 2: Two Variable Relationships",
+    "text": "Exercise 2: Two Variable Relationships\n\n2.1 Population vs Income Scatter Plot\nYour Task: Explore the relationship between population size and median income.\n\n# Basic scatter plot\nggplot(county_data) +\n  aes(x = total_popE, y = median_incomeE) +\n  geom_point() +\n  labs(\n    title = \"Population vs Median Income\",\n    x = \"Total Population\",\n    y = \"Median Household Income ($)\"\n  ) +\n  theme_minimal() +\n  scale_x_continuous(labels = comma) +\n  scale_y_continuous(labels = dollar)\n\n\n\n\n\n\n\n\n\n\n2.2 Add Trend Line and Labels\nYour Task: Improve the plot by adding a trend line and labeling interesting points.\n\n# Enhanced scatter plot with trend line\nggplot(county_data) +\n  aes(x = total_popE, y = median_incomeE) +\n  geom_point(alpha = 0.7) +\n  geom_smooth(method = \"lm\", se = TRUE, color = \"red\") +\n  labs(\n    title = \"Population vs Median Income in Pennsylvania Counties\",\n    subtitle = \"2018-2022 ACS 5-Year Estimates\",\n    x = \"Total Population\",\n    y = \"Median Household Income ($)\",\n    caption = \"Source: U.S. Census Bureau\"\n  ) +\n  theme_minimal() +\n  scale_x_continuous(labels = comma) +\n  scale_y_continuous(labels = dollar)\n\n\n\n\n\n\n\n# Calculate correlation\ncorrelation &lt;- cor(county_data$total_popE, county_data$median_incomeE, use = \"complete.obs\")\nprint(paste(\"Correlation coefficient:\", round(correlation, 3)))\n\n[1] \"Correlation coefficient: 0.457\"\n\n\n\n\n2.3 Deal with Skewed Data\nYour Task: The population data is highly skewed. Try a log transformation.\n\n# Log-transformed scatter plot\nggplot(county_data) +\n  aes(x = log(total_popE), y = median_incomeE) +\n  geom_point(alpha = 0.7) +\n  geom_smooth(method = \"lm\", se = TRUE) +\n  labs(\n    title = \"Log(Population) vs Median Income\",\n    x = \"Log(Total Population)\",\n    y = \"Median Household Income ($)\"\n  ) +\n  theme_minimal() +\n  scale_y_continuous(labels = dollar)\n\n\n\n\n\n\n\n\nQuestion: Does the log transformation reveal a clearer relationship?\n\n\n2.4 Challenge Exercise: Age vs Income Relationship\nYour Task: Explore the relationship between median age and median income using different visualization techniques.\nRequirements:\n\nCreate a scatter plot with median age on x-axis and median income on y-axis\nUse red points (color = \"red\") with 50% transparency (alpha = 0.5)\nAdd a smooth trend line using method = \"loess\" instead of “lm”\nUse the “dark” theme (theme_dark())\nFormat the y-axis with dollar signs\nAdd a title that mentions both variables\n\n\n# Enhanced scatter plot with trend line\nggplot(county_data) +\n  aes(x = median_ageE, y = median_incomeE) +\n  geom_point(alpha = 0.5) +\n  geom_smooth(method = \"lm\", se = TRUE, color = \"red\") +\n  labs(\n    title = \"Median Age vs Median Income in Pennsylvania Counties\",\n    subtitle = \"2018-2022 ACS 5-Year Estimates\",\n    x = \"Median Age\",\n    y = \"Median Household Income ($)\",\n    caption = \"Source: U.S. Census Bureau\"\n  ) +\n  theme_dark() +\n  scale_x_continuous(labels = comma) +\n  scale_y_continuous()"
+  },
+  {
+    "objectID": "lecture/week3_lab_exercise.html#exercise-3-data-quality-visualization",
+    "href": "lecture/week3_lab_exercise.html#exercise-3-data-quality-visualization",
+    "title": "Week 3 In-Class Lab: Data Visualization and EDA",
+    "section": "Exercise 3: Data Quality Visualization",
+    "text": "Exercise 3: Data Quality Visualization\n\n3.1 Visualize Margins of Error\nYour Task: Create a visualization showing how data reliability varies across counties.\n\n# Calculate MOE percentages\ncounty_reliability &lt;- county_data %&gt;%\n  mutate(\n    income_moe_pct = (median_incomeM / median_incomeE) * 100,\n    pop_category = case_when(\n      total_popE &lt; 50000 ~ \"Small (&lt;50K)\",\n      total_popE &lt; 200000 ~ \"Medium (50K-200K)\",\n      TRUE ~ \"Large (200K+)\"\n    )\n  )\n\n# MOE by population size\nggplot(county_reliability) +\n  aes(x = total_popE, y = income_moe_pct) +\n  geom_point(alpha = 0.7) +\n  geom_hline(yintercept = 10, color = \"red\", linetype = \"dashed\") +\n  labs(\n    title = \"Data Reliability Decreases with Population Size\",\n    x = \"Total Population\",\n    y = \"Margin of Error (%)\",\n    caption = \"Red line = 10% reliability threshold\"\n  ) +\n  theme_minimal() +\n  scale_x_continuous(labels = comma)\n\n\n\n\n\n\n\n\n\n\n3.2 Compare Reliability by County Size\nYour Task: Use box plots to compare MOE across county size categories.\n\n# Box plots by population category\nggplot(county_reliability) +\n  aes(x = pop_category, y = income_moe_pct, fill = pop_category) +\n  geom_boxplot() +\n  labs(\n    title = \"Data Reliability by County Size Category\",\n    x = \"Population Category\",\n    y = \"Margin of Error (%)\"\n  ) +\n  theme_minimal() +\n  theme(legend.position = \"none\")  # Remove legend since x-axis is clear\n\n\n\n\n\n\n\n\n\n\n3.3 Challenge Exercise: Age Data Reliability\nYour Task: Analyze the reliability of median age data across counties.\nRequirements:\n\nCalculate MOE percentage for median age (median_ageM / median_ageE * 100)\nCreate a scatter plot showing population vs age MOE percentage\nUse purple points (color = \"purple\") with size = 2\nAdd a horizontal line at 5% MOE using geom_hline() with a blue dashed line\nUse theme_classic()instead of theme_minimal()\nCreate a boxplot comparing age MOE across the three population categories\n\n\n# Add a age_MOE__percentage column calculation\ncounty_reliability &lt;- county_reliability %&gt;%\n  mutate(age_MOE_percentage = median_ageM / median_ageE * 100)\n\n# Box plots by population category\nggplot(county_reliability) +\n  aes(x = total_popE, y = age_MOE_percentage, fill = total_popE) +\n  geom_boxplot() +\n  labs(\n    title = \"Data Reliability by Population Size Category\",\n    x = \"Total Population\",\n    y = \"Margin of Error (%)\"\n  ) +\n  theme_classic() +\n  theme(legend.position = \"none\")  # Remove legend since x-axis is clear"
+  },
+  {
+    "objectID": "lecture/week3_lab_exercise.html#exercise-4-multiple-variables-with-color-and-faceting",
+    "href": "lecture/week3_lab_exercise.html#exercise-4-multiple-variables-with-color-and-faceting",
+    "title": "Week 3 In-Class Lab: Data Visualization and EDA",
+    "section": "Exercise 4: Multiple Variables with Color and Faceting",
+    "text": "Exercise 4: Multiple Variables with Color and Faceting\n\n4.1 Three-Variable Scatter Plot\nYour Task: Add median age as a color dimension to the population-income relationship.\n\n# Three-variable scatter plot\nggplot(county_data) +\n  aes(x = total_popE, y = median_incomeE, color = median_ageE) +\n  geom_point(size = 2, alpha = 0.7) +\n  scale_color_viridis_c(name = \"Median\\nAge\") +\n  labs(\n    title = \"Population, Income, and Age Patterns\",\n    x = \"Total Population\",\n    y = \"Median Household Income ($)\"\n  ) +\n  theme_minimal() +\n  scale_x_continuous(labels = comma) +\n  scale_y_continuous(labels = dollar)\n\n\n\n\n\n\n\n\n\n\n4.2 Create Categories for Faceting\nYour Task: Create age categories and use faceting to compare patterns.\n\n# Create age categories and faceted plot\ncounty_faceted &lt;- county_data %&gt;%\n  mutate(\n    age_category = case_when(\n      median_ageE &lt; 40 ~ \"Young (&lt; 40)\",\n      median_ageE &lt; 45 ~ \"Middle-aged (40-45)\",\n      TRUE ~ \"Older (45+)\"\n    )\n  )\n\nggplot(county_faceted) +\n  aes(x = total_popE, y = median_incomeE) +\n  geom_point(alpha = 0.7) +\n  geom_smooth(method = \"lm\", se = FALSE) +\n  facet_wrap(~age_category) +\n  labs(\n    title = \"Population-Income Relationship by Age Profile\",\n    x = \"Total Population\",\n    y = \"Median Income ($)\"\n  ) +\n  theme_minimal() +\n  scale_x_continuous(labels = comma) +\n  scale_y_continuous(labels = dollar)\n\n\n\n\n\n\n\n\nQuestion: Do the relationships between population and income differ by age profile?\nYour Task: Create a visualization using income categories and multiple aesthetic mappings.\nRequirements:\n\nCreate income categories: “Low” (&lt;$50k), “Middle” ($50k-$80k), “High” (&gt;$80k)\nMake a scatter plot with population (x) vs median age (y) - Color points by income category\nSize points by the margin of error for income (median_incomeM)\nUse the “Set2” color palette: scale_color_brewer(palette = \"Set2\") **note: you’ll need to load the RColorBrewer package for this`\nFacet by income category using facet_wrap()\nUse theme_bw() theme"
+  },
+  {
+    "objectID": "lecture/week3_lab_exercise.html#exercise-5-data-joins-and-integration",
+    "href": "lecture/week3_lab_exercise.html#exercise-5-data-joins-and-integration",
+    "title": "Week 3 In-Class Lab: Data Visualization and EDA",
+    "section": "Exercise 5: Data Joins and Integration",
+    "text": "Exercise 5: Data Joins and Integration\n\n5.1 Get Additional Census Data\nYour Task: Load educational attainment data and join it with our existing data.\n\n# Get educational attainment data\neducation_data &lt;- get_acs(\n  geography = \"county\",\n  variables = c(\n    total_25plus = \"B15003_001\",    # Total population 25 years and over\n    bachelor_plus = \"B15003_022\"    # Bachelor's degree or higher\n  ),\n  state = state_choice,\n  year = 2022,\n  output = \"wide\"\n) %&gt;%\n  mutate(\n    pct_college = (bachelor_plusE / total_25plusE) * 100,\n    county_name = str_remove(NAME, paste0(\", \", state_choice))\n  ) %&gt;%\n  select(GEOID, county_name, pct_college)\n\n# Check the data\nhead(education_data)\n\n# A tibble: 6 × 3\n  GEOID county_name                    pct_college\n  &lt;chr&gt; &lt;chr&gt;                                &lt;dbl&gt;\n1 42001 Adams County, Pennsylvania           13.9 \n2 42003 Allegheny County, Pennsylvania       25.4 \n3 42005 Armstrong County, Pennsylvania       12.7 \n4 42007 Beaver County, Pennsylvania          18.3 \n5 42009 Bedford County, Pennsylvania          9.73\n6 42011 Berks County, Pennsylvania           17.2 \n\n\n\n\n5.2 Join the Datasets\nYour Task: Join the education data with our main county dataset.\n\n# Perform the join\ncombined_data &lt;- county_data %&gt;%\n  left_join(education_data, by = \"GEOID\")\n\n# Check the join worked\ncat(\"Original data rows:\", nrow(county_data), \"\\n\")\n\nOriginal data rows: 67 \n\ncat(\"Combined data rows:\", nrow(combined_data), \"\\n\")\n\nCombined data rows: 67 \n\ncat(\"Missing education data:\", sum(is.na(combined_data$pct_college)), \"\\n\")\n\nMissing education data: 0 \n\n# View the combined data\nhead(combined_data)\n\n# A tibble: 6 × 11\n  GEOID NAME     total_popE total_popM median_incomeE median_incomeM median_ageE\n  &lt;chr&gt; &lt;chr&gt;         &lt;dbl&gt;      &lt;dbl&gt;          &lt;dbl&gt;          &lt;dbl&gt;       &lt;dbl&gt;\n1 42001 Adams C…     104604         NA          78975           3334        43.8\n2 42003 Alleghe…    1245310         NA          72537            869        40.6\n3 42005 Armstro…      65538         NA          61011           2202        47  \n4 42007 Beaver …     167629         NA          67194           1531        44.9\n5 42009 Bedford…      47613         NA          58337           2606        47.3\n6 42011 Berks C…     428483         NA          74617           1191        39.9\n# ℹ 4 more variables: median_ageM &lt;dbl&gt;, county_name.x &lt;chr&gt;,\n#   county_name.y &lt;chr&gt;, pct_college &lt;dbl&gt;\n\n\n\n\n5.3 Analyze the New Relationship\nYour Task: Explore the relationship between education and income.\n\n# Education vs Income scatter plot\nggplot(combined_data) +\n  aes(x = pct_college, y = median_incomeE) +\n  geom_point(alpha = 0.7) +\n  geom_smooth(method = \"lm\", se = TRUE) +\n  labs(\n    title = \"Education vs Income Across Counties\",\n    x = \"Percent with Bachelor's Degree or Higher\",\n    y = \"Median Household Income ($)\"\n  ) +\n  theme_minimal() +\n  scale_y_continuous(labels = dollar)\n\n\n\n\n\n\n\n# Calculate correlation\nedu_income_cor &lt;- cor(combined_data$pct_college, combined_data$median_incomeE, use = \"complete.obs\")\nprint(paste(\"Education-Income Correlation:\", round(edu_income_cor, 3)))\n\n[1] \"Education-Income Correlation: 0.811\"\n\n\n\n\n5.4 Get Housing Data and Triple Join\nYour Task: Add housing cost data to create a three-way analysis.\n\n# Get housing cost data\nhousing_data &lt;- get_acs(\n  geography = \"county\",\n  variables = c(\n    median_rent = \"B25058_001\",     # Median contract rent\n    median_home_value = \"B25077_001\" # Median value of owner-occupied units\n  ),\n  state = state_choice,\n  year = 2022,\n  output = \"wide\"\n) %&gt;%\n  select(GEOID, median_rent = median_rentE, median_home_value = median_home_valueE)\n\n# Join all three datasets\nfull_data &lt;- combined_data %&gt;%\n  left_join(housing_data, by = \"GEOID\")\n\n# Create a housing affordability measure\nfull_data &lt;- full_data %&gt;%\n  mutate(\n    rent_to_income = (median_rent * 12) / median_incomeE * 100,\n    income_category = case_when(\n      median_incomeE &lt; 50000 ~ \"Low Income\",\n      median_incomeE &lt; 80000 ~ \"Middle Income\",\n      TRUE ~ \"High Income\"\n    )\n  )\n\nhead(full_data)\n\n# A tibble: 6 × 15\n  GEOID NAME     total_popE total_popM median_incomeE median_incomeM median_ageE\n  &lt;chr&gt; &lt;chr&gt;         &lt;dbl&gt;      &lt;dbl&gt;          &lt;dbl&gt;          &lt;dbl&gt;       &lt;dbl&gt;\n1 42001 Adams C…     104604         NA          78975           3334        43.8\n2 42003 Alleghe…    1245310         NA          72537            869        40.6\n3 42005 Armstro…      65538         NA          61011           2202        47  \n4 42007 Beaver …     167629         NA          67194           1531        44.9\n5 42009 Bedford…      47613         NA          58337           2606        47.3\n6 42011 Berks C…     428483         NA          74617           1191        39.9\n# ℹ 8 more variables: median_ageM &lt;dbl&gt;, county_name.x &lt;chr&gt;,\n#   county_name.y &lt;chr&gt;, pct_college &lt;dbl&gt;, median_rent &lt;dbl&gt;,\n#   median_home_value &lt;dbl&gt;, rent_to_income &lt;dbl&gt;, income_category &lt;chr&gt;\n\n\n\n\n5.5 Advanced Multi-Variable Analysis\nYour Task: Create a comprehensive visualization showing multiple relationships.\n\n# Complex multi-variable plot\nggplot(full_data) +\n  aes(x = pct_college, y = rent_to_income, \n      color = income_category, size = total_popE) +\n  geom_point(alpha = 0.7) +\n  labs(\n    title = \"Education, Housing Affordability, and Income Patterns\",\n    subtitle = \"Larger points = larger population\",\n    x = \"Percent with Bachelor's Degree or Higher\",\n    y = \"Annual Rent as % of Median Income\",\n    color = \"Income Category\",\n    size = \"Population\"\n  ) +\n  theme_minimal() +\n  guides(size = guide_legend(override.aes = list(alpha = 1)))"
+  },
+  {
+    "objectID": "lecture/week3_lab_exercise.html#exercise-6-publication-ready-visualization",
+    "href": "lecture/week3_lab_exercise.html#exercise-6-publication-ready-visualization",
+    "title": "Week 3 In-Class Lab: Data Visualization and EDA",
+    "section": "Exercise 6: Publication-Ready Visualization",
+    "text": "Exercise 6: Publication-Ready Visualization\n\n6.1 Create a Policy-Focused Visualization\nYour Task: Combine multiple visualizations to tell a more complete story about county characteristics.\n\n# Create a multi-panel figure\nlibrary(patchwork)  # For combining plots\n\n# Plot 1: Income distribution\np1 &lt;- ggplot(full_data) +\n  aes(x = median_incomeE) +\n  geom_histogram(bins = 15, fill = \"steelblue\", alpha = 0.7) +\n  labs(title = \"A) Income Distribution\", \n       x = \"Median Income ($)\", y = \"Counties\") +\n  scale_x_continuous(labels = dollar) +\n  theme_minimal()\n\n# Plot 2: Education vs Income\np2 &lt;- ggplot(full_data) +\n  aes(x = pct_college, y = median_incomeE) +\n  geom_point(alpha = 0.7) +\n  geom_smooth(method = \"lm\", se = FALSE) +\n  labs(title = \"B) Education vs Income\",\n       x = \"% College Educated\", y = \"Median Income ($)\") +\n  scale_y_continuous(labels = dollar) +\n  theme_minimal()\n\n# Plot 3: Housing affordability by income category\np3 &lt;- ggplot(full_data) +\n  aes(x = income_category, y = rent_to_income, fill = income_category) +\n  geom_boxplot() +\n  labs(title = \"C) Housing Affordability by Income\",\n       x = \"Income Category\", y = \"Rent as % of Income\") +\n  theme_minimal() +\n  theme(legend.position = \"none\")\n\n# Plot 4: Data reliability by population\np4 &lt;- ggplot(county_reliability) +\n  aes(x = total_popE, y = income_moe_pct) +\n  geom_point(alpha = 0.7) +\n  geom_hline(yintercept = 10, color = \"red\", linetype = \"dashed\") +\n  labs(title = \"D) Data Reliability\",\n       x = \"Population\", y = \"MOE (%)\") +\n  scale_x_continuous(labels = comma) +\n  theme_minimal()\n\n# Combine all plots\ncombined_plot &lt;- (p1 | p2) / (p3 | p4)\ncombined_plot + plot_annotation(\n  title = \"Pennsylvania County Analysis: Income, Education, and Housing Patterns\",\n  caption = \"Source: American Community Survey 2018-2022\"\n)"
+  },
+  {
+    "objectID": "lecture/week3_lab_exercise.html#exercise-7-ethical-data-communication---implementing-research-recommendations",
+    "href": "lecture/week3_lab_exercise.html#exercise-7-ethical-data-communication---implementing-research-recommendations",
+    "title": "Week 3 In-Class Lab: Data Visualization and EDA",
+    "section": "Exercise 7: Ethical Data Communication - Implementing Research Recommendations",
+    "text": "Exercise 7: Ethical Data Communication - Implementing Research Recommendations\nBackground: Research by Jurjevich et al. (2018) found that only 27% of planners warn users about unreliable ACS data, violating AICP ethical standards. In this exercise, you’ll practice the five research-based guidelines for ethical ACS data communication.\n\n7.1 Create Professional Data Tables with Uncertainty\nYour Task: Follow the Jurjevich et al. guidelines to create an ethical data presentation.\n\n# Get comprehensive data for ethical analysis\nethical_demo_data &lt;- get_acs(\n  geography = \"county\",\n  variables = c(\n    median_income = \"B19013_001\",   # Median household income\n    total_25plus = \"B15003_001\",    # Total population 25 years and over\n    bachelor_plus = \"B15003_022\",   # Bachelor's degree or higher\n    total_pop = \"B01003_001\"        # Total population\n  ),\n  state = state_choice,\n  year = 2022,\n  output = \"wide\"\n) %&gt;%\n  mutate(\n    # Calculate derived statistics\n    pct_college = (bachelor_plusE / total_25plusE) * 100,\n    \n    # Calculate MOE for percentage using error propagation\n    pct_college_moe = pct_college * sqrt((bachelor_plusM/bachelor_plusE)^2 + (total_25plusM/total_25plusE)^2),\n    \n    # Calculate coefficient of variation for all key variables\n    income_cv = (median_incomeM / median_incomeE) * 100,\n    education_cv = (pct_college_moe / pct_college) * 100,\n    \n    # Create reliability categories based on CV\n    income_reliability = case_when(\n      income_cv &lt; 12 ~ \"High\",\n      income_cv &lt;= 40 ~ \"Moderate\", \n      TRUE ~ \"Low\"\n    ),\n    \n    education_reliability = case_when(\n      education_cv &lt; 12 ~ \"High\",\n      education_cv &lt;= 40 ~ \"Moderate\",\n      TRUE ~ \"Low\"\n    ),\n    \n    # Create color coding for reliability\n    income_color = case_when(\n      income_reliability == \"High\" ~ \"🟢\",\n      income_reliability == \"Moderate\" ~ \"🟡\",\n      TRUE ~ \"🔴\"\n    ),\n    \n    education_color = case_when(\n      education_reliability == \"High\" ~ \"🟢\",\n      education_reliability == \"Moderate\" ~ \"🟡\", \n      TRUE ~ \"🔴\"\n    ),\n    \n    # Clean county names\n    county_name = str_remove(NAME, paste0(\", \", state_choice))\n  )\n\n# Create ethical data table focusing on least reliable estimates\nethical_data_table &lt;- ethical_demo_data %&gt;%\n  select(county_name, median_incomeE, median_incomeM, income_cv, income_color,\n         pct_college, pct_college_moe, education_cv, education_color) %&gt;%\n  arrange(desc(income_cv)) %&gt;%  # Show least reliable first\n  slice_head(n = 10)\n\n# Create professional table following guidelines\nlibrary(knitr)\nlibrary(kableExtra)\n\nethical_data_table %&gt;%\n  select(county_name, median_incomeE, median_incomeM, income_cv, income_color) %&gt;%\n  kable(\n    col.names = c(\"County\", \"Median Income\", \"Margin of Error\", \n                  \"CV (%)\", \"Reliability\"),\n    caption = \"Pennsylvania Counties: Median Household Income with Statistical Uncertainty\",\n    format.args = list(big.mark = \",\")\n  ) %&gt;%\n  kable_styling(bootstrap_options = c(\"striped\", \"hover\")) %&gt;%\n  footnote(\n    general = c(\"Coefficient of Variation (CV) indicates reliability:\",\n                \"🟢 High reliability (CV &lt; 12%)\",\n                \"🟡 Moderate reliability (CV 12-40%)\", \n                \"🔴 Low reliability (CV &gt; 40%)\",\n                \"Following Jurjevich et al. (2018) research recommendations\",\n                \"Source: American Community Survey 2018-2022 5-Year Estimates\"),\n    general_title = \"Notes:\"\n  )\n\n\nPennsylvania Counties: Median Household Income with Statistical Uncertainty\n\n\nCounty\nMedian Income\nMargin of Error\nCV (%)\nReliability\n\n\n\n\nForest County, Pennsylvania\n46,188\n4,612\n9.985278\n🟢 |\n\n\nSullivan County, Pennsylvania\n62,910\n5,821\n9.252901\n🟢 |\n\n\nUnion County, Pennsylvania\n64,914\n4,753\n7.321995\n🟢 |\n\n\nMontour County, Pennsylvania\n72,626\n5,146\n7.085617\n🟢 |\n\n\nElk County, Pennsylvania\n61,672\n4,091\n6.633480\n🟢 |\n\n\nGreene County, Pennsylvania\n66,283\n4,247\n6.407374\n🟢 |\n\n\nCameron County, Pennsylvania\n46,186\n2,605\n5.640237\n🟢 |\n\n\nSnyder County, Pennsylvania\n65,914\n3,666\n5.561793\n🟢 |\n\n\nCarbon County, Pennsylvania\n64,538\n3,424\n5.305402\n🟢 |\n\n\nWarren County, Pennsylvania\n57,925\n3,005\n5.187743\n🟢 |\n\n\n\nNotes:\n\n\n\n\n\n\n Coefficient of Variation (CV) indicates reliability:\n\n\n\n\n\n\n 🟢 High reliability (CV &lt; 12%)\n\n\n\n\n\n\n 🟡 Moderate reliability (CV 12-40%)\n\n\n\n\n\n\n 🔴 Low reliability (CV &gt; 40%)\n\n\n\n\n\n\n Following Jurjevich et al. (2018) research recommendations\n\n\n\n\n\n\n Source: American Community Survey 2018-2022 5-Year Estimates\n\n\n\n\n\n\n\n\n\n\n\n\n7.3 Now try Census Tracts\n\n# Get census tract poverty data for Philadelphia\nphilly_poverty &lt;- get_acs(\n    geography = \"tract\",\n    variables = c(\n      poverty_pop = \"B17001_001\",     \n      poverty_below = \"B17001_002\"    \n    ),\n    state = \"PA\",\n    county = \"101\",\n    year = 2022,\n    output = \"wide\"\n  ) %&gt;%\n  filter(poverty_popE &gt; 0) %&gt;%  # Remove tracts with no poverty data\n  mutate(\n    # Calculate poverty rate and its MOE\n    poverty_rate = (poverty_belowE / poverty_popE) * 100,\n    \n    # MOE for derived percentage using error propagation\n    poverty_rate_moe = poverty_rate * sqrt((poverty_belowM/poverty_belowE)^2 + (poverty_popM/poverty_popE)^2),\n    \n    # Coefficient of variation\n    poverty_cv = (poverty_rate_moe / poverty_rate) * 100,\n    \n    # Reliability assessment\n    reliability = case_when(\n      poverty_cv &lt; 12 ~ \"High\",\n      poverty_cv &lt;= 40 ~ \"Moderate\",\n      poverty_cv &lt;= 75 ~ \"Low\",\n      TRUE ~ \"Very Low\"\n    ),\n    \n    # Color coding\n    reliability_color = case_when(\n      reliability == \"High\" ~ \"🟢\",\n      reliability == \"Moderate\" ~ \"🟡\",\n      reliability == \"Low\" ~ \"🟠\",\n      TRUE ~ \"🔴\"\n    ),\n    \n    # Population size categories\n    pop_category = case_when(\n      poverty_popE &lt; 500 ~ \"Very Small (&lt;500)\",\n      poverty_popE &lt; 1000 ~ \"Small (500-1000)\",\n      poverty_popE &lt; 1500 ~ \"Medium (1000-1500)\",\n      TRUE ~ \"Large (1500+)\"\n    )\n  )\n\n# Check the data quality crisis at tracts\nreliability_summary &lt;- philly_poverty %&gt;%\n  count(reliability) %&gt;%\n  mutate(\n    percentage = round(n / sum(n) * 100, 1),\n    total_bg = sum(n)\n  )\n\nprint(\"Philadelphia Census Tract Poverty Data Reliability:\")\n\n[1] \"Philadelphia Census Tract Poverty Data Reliability:\"\n\nreliability_summary %&gt;%\n  kable(\n    col.names = c(\"Data Quality\", \"Number of Tracts\", \"Percentage\", \"Total\"),\n    caption = \"The Data Quality Crisis: Philadelphia Census Tract Poverty Estimates\"\n  ) %&gt;%\n  kable_styling()\n\n\nThe Data Quality Crisis: Philadelphia Census Tract Poverty Estimates\n\n\nData Quality\nNumber of Tracts\nPercentage\nTotal\n\n\n\n\nLow\n295\n75.8\n389\n\n\nModerate\n53\n13.6\n389\n\n\nVery Low\n41\n10.5\n389\n\n\n\n\n\n\n# Show the most problematic estimates (following Guideline 3: provide context)\nworst_estimates &lt;- philly_poverty %&gt;%\n  filter(reliability %in% c(\"Low\", \"Very Low\")) %&gt;%\n  arrange(desc(poverty_cv)) %&gt;%\n  slice_head(n = 10)\n\nworst_estimates %&gt;%\n  select(GEOID, poverty_rate, poverty_rate_moe, poverty_cv, reliability_color, poverty_popE) %&gt;%\n  kable(\n    col.names = c(\"Tract\", \"Poverty Rate (%)\", \"MOE\", \"CV (%)\", \"Quality\", \"Pop Size\"),\n    caption = \"Guideline 3: Tracts with Least Reliable Poverty Estimates\",\n    digits = c(0, 1, 1, 1, 0, 0)\n  ) %&gt;%\n  kable_styling() %&gt;%\n  footnote(\n    general = c(\"These estimates should NOT be used for policy decisions\",\n                \"CV &gt; 75% indicates very low reliability\",\n                \"Recommend aggregation or alternative data sources\")\n  )\n\n\nGuideline 3: Tracts with Least Reliable Poverty Estimates\n\n\nTract\nPoverty Rate (%)\nMOE\nCV (%)\nQuality\nPop Size\n\n\n\n\n42101989100\n15.8\n45.2\n286.1\n🔴 |\n38|\n\n\n42101000101\n0.7\n1.1\n157.9\n🔴 |\n1947|\n\n\n42101980200\n37.9\n45.2\n119.4\n🔴 |\n66|\n\n\n42101023100\n3.8\n4.5\n119.4\n🔴 |\n1573|\n\n\n42101025600\n1.7\n2.0\n114.2\n🔴 |\n2642|\n\n\n42101014202\n1.7\n1.8\n107.0\n🔴 |\n2273|\n\n\n42101000403\n6.6\n6.7\n101.8\n🔴 |\n1047|\n\n\n42101026100\n4.7\n4.4\n95.0\n🔴 |\n2842|\n\n\n42101036502\n4.9\n4.7\n94.9\n🔴 |\n4284|\n\n\n42101032000\n21.8\n20.6\n94.8\n🔴 |\n7873|\n\n\n\nNote: \n\n\n\n\n\n\n\n These estimates should NOT be used for policy decisions\n\n\n\n\n\n\n\n CV &gt; 75% indicates very low reliability\n\n\n\n\n\n\n\n Recommend aggregation or alternative data sources"
+  },
+  {
+    "objectID": "lecture/week3_lab_exercise.html#key-references-and-acknowledgments",
+    "href": "lecture/week3_lab_exercise.html#key-references-and-acknowledgments",
+    "title": "Week 3 In-Class Lab: Data Visualization and EDA",
+    "section": "Key References and Acknowledgments",
+    "text": "Key References and Acknowledgments\nJurjevich, J. R., Griffin, A. L., Spielman, S. E., Folch, D. C., Merrick, M., & Nagle, N. N. (2018). Navigating statistical uncertainty: How urban and regional planners understand and work with American community survey (ACS) data for guiding policy. Journal of the American Planning Association, 84(2), 112-126.\nWalker, K. (2023). Analyzing US Census Data: Methods, Maps, and Models in R. Available at: https://walker-data.com/census-r/\nAI Acknowledgments: This lab was developed with coding assistance from Claude AI. I have run, reviewed, and edited the final version. Any remaining errors are my own."
+  },
+  {
+    "objectID": "lecture/week2_slides.html",
+    "href": "lecture/week2_slides.html",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "",
+    "text": "Part 0: Questions from Last Week - Github - R? dplyr?\nPart 1: Algorithmic Decision Making\n\nWhat are algorithms in public policy?\nWhen algorithmic decision making goes wrong\nCurrent policy responses\n\nPart 2: Active Learning\n\nSmall group scenarios: designing ethical algorithms\nDiscussion and reflection\n\nPart 3: Census Data Foundations\n\nUnderstanding census data for policy analysis\nGeography and data availability\n\nPart 4: Hands-On Census Data with R\n\nLive demonstration of key functions\nPractice exercises"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#what-well-cover",
+    "href": "lecture/week2_slides.html#what-well-cover",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "",
+    "text": "Part 0: Questions from Last Week - Github - R? dplyr?\nPart 1: Algorithmic Decision Making\n\nWhat are algorithms in public policy?\nWhen algorithmic decision making goes wrong\nCurrent policy responses\n\nPart 2: Active Learning\n\nSmall group scenarios: designing ethical algorithms\nDiscussion and reflection\n\nPart 3: Census Data Foundations\n\nUnderstanding census data for policy analysis\nGeography and data availability\n\nPart 4: Hands-On Census Data with R\n\nLive demonstration of key functions\nPractice exercises"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#opening-question",
+    "href": "lecture/week2_slides.html#opening-question",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Opening Question",
+    "text": "Opening Question\nDiscuss with your table (1 minutes):\nWhat is an algorithm?\nThink beyond just computer code - how do you make decisions in daily life?"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#what-is-an-algorithm",
+    "href": "lecture/week2_slides.html#what-is-an-algorithm",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "What Is An Algorithm?",
+    "text": "What Is An Algorithm?\nDefinition: A set of rules or instructions for solving a problem or completing a task\nExamples:\n\nRecipe for cooking\nDirections to get somewhere\n\nDecision tree for hiring\nComputer program that processes data to make predictions"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#algorithmic-decision-making-in-government",
+    "href": "lecture/week2_slides.html#algorithmic-decision-making-in-government",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Algorithmic Decision Making in Government",
+    "text": "Algorithmic Decision Making in Government\nSystems used to assist or replace human decision-makers\nBased on predictions from models that process historical data containing:\n\nInputs (“features”, “predictors”, “independent variables”, “x”)\nOutputs (“labels”, “outcome”, “dependent variable”, “y”)"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#real-world-examples",
+    "href": "lecture/week2_slides.html#real-world-examples",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Real-World Examples",
+    "text": "Real-World Examples\n\n\nCriminal Justice Recidivism risk scores for bail and sentencing decisions\n\nHousing & Finance\nMortgage lending and tenant screening algorithms\n\nHealthcare Patient care prioritization and resource allocation"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#clarifying-key-terms",
+    "href": "lecture/week2_slides.html#clarifying-key-terms",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Clarifying Key Terms",
+    "text": "Clarifying Key Terms\nData Science → Computer science/engineering focus on algorithms and methods\nData Analytics → Application of data science methods to other disciplines\nMachine Learning → Algorithms for classification & prediction that learn from data\nAI → Algorithms that adjust and improve across iterations (neural networks, etc.)"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#public-sector-context",
+    "href": "lecture/week2_slides.html#public-sector-context",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Public Sector Context",
+    "text": "Public Sector Context\nLong history of government data collection:\n\nCivic registration systems\n\nCensus data\nAdministrative records\nOperations research (post-WWII)\n\nWhat’s new?\n\nMore data (official and “accidental”)\nFocus on prediction rather than explanation\nHarder to interpret and explain"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#why-government-uses-algorithms",
+    "href": "lecture/week2_slides.html#why-government-uses-algorithms",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Why Government Uses Algorithms",
+    "text": "Why Government Uses Algorithms\nGovernments have limited budgets and need to serve everyone\nAlgorithmic decision making is especially appealing because it promises:\n\nEfficiency - process more cases faster\nConsistency - same rules applied to everyone\n\nObjectivity - removes human bias\nCost savings - fewer staff needed\n\nBut does it deliver on these promises?"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#remember-data-analytics-is-subjective",
+    "href": "lecture/week2_slides.html#remember-data-analytics-is-subjective",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Remember: Data Analytics Is Subjective",
+    "text": "Remember: Data Analytics Is Subjective\nEvery step involves human choices:\n\nData cleaning decisions\nData coding or classification\n\nData collection - use of imperfect proxies\nHow you interpret results\nWhat variables you put in the model\n\nThese choices embed human values and biases"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#section",
+    "href": "lecture/week2_slides.html#section",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "",
+    "text": "Healthcare Algorithm Bias\nThe Problem:\nAlgorithm used to identify high-risk patients for additional care systematically discriminated against Black patients\nWhat Went Wrong:\n\nAlgorithm used healthcare costs as a proxy for need\nBlack patients typically incur lower costs due to systemic inequities in access\n\nResult: Black patients under-prioritized despite equivalent levels of illness\n\nScale: Used by hospitals and insurers for over 200 million people annually\nSource: Obermeyer et al. (2019), Science"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#criminal-justice-algorithm-bias",
+    "href": "lecture/week2_slides.html#criminal-justice-algorithm-bias",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Criminal Justice Algorithm Bias",
+    "text": "Criminal Justice Algorithm Bias\nCOMPAS Recidivism Prediction:\nThe Problem:\n\nAlgorithm 2x as likely to falsely flag Black defendants as high risk\nWhite defendants often rated low risk even when they do reoffend\n\nWhy This Happens:\n\nHistorical arrest data reflects biased policing patterns\nSocioeconomic proxies correlate with race\n“Objective” data contains subjective human decisions\n\nSource: ProPublica investigation"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#dutch-welfare-fraud-detection",
+    "href": "lecture/week2_slides.html#dutch-welfare-fraud-detection",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Dutch Welfare Fraud Detection",
+    "text": "Dutch Welfare Fraud Detection\nThe Problem:\n\n“Black box” system operated in secrecy\nImpossible for individuals to understand or challenge decisions\nDisproportionately targeted vulnerable populations\n\nCourt Ruling:\n\nBreached privacy rights under European Convention on Human Rights\nHighlighted unfair profiling and discrimination\nSystem eventually shut down"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#small-group-challenge-10-minutes-we-keep-a-tight-ship-around-here.",
+    "href": "lecture/week2_slides.html#small-group-challenge-10-minutes-we-keep-a-tight-ship-around-here.",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Small Group Challenge (10 Minutes! We keep a tight ship around here.)",
+    "text": "Small Group Challenge (10 Minutes! We keep a tight ship around here.)\nAt your table, pick one scenario and answer three prompts.\nPrompts (plain English, no tech):\n\nProxy: What would you use to stand in for what you want?\nBlind spot: What data gap or historical bias could skew results?\nHarm + Guardrail: Who could be harmed, and one simple safeguard?"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#pick-one-scenario",
+    "href": "lecture/week2_slides.html#pick-one-scenario",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Pick one scenario",
+    "text": "Pick one scenario\n\nEmergency response prioritization (natural disasters)\n\nSchool enrollment assignment\n\nAutomated traffic enforcement (red-light cameras)\n\nHousing assistance allocation\n\nPredictive policing"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#example-so-you-see-the-level",
+    "href": "lecture/week2_slides.html#example-so-you-see-the-level",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Example (so you see the level)",
+    "text": "Example (so you see the level)\nScenario: Emergency response\n\nProxy: 911 call volume → stand-in for “need”\n\nBlind spot: Under-calling where trust/connectivity is low\n\nHarm + Guardrail: Wealthier areas over-prioritized → add a vulnerability boost (age/disability) and a minimum-service floor per zone"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#discuss-at-your-table-8-minutes",
+    "href": "lecture/week2_slides.html#discuss-at-your-table-8-minutes",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Discuss at your table (8 minutes)",
+    "text": "Discuss at your table (8 minutes)\nAnswer these out loud and on one device or notepad:\n\nProxy → “We’d use ____ as a stand-in for ____.”\nBlind spot → “This could miss/undercount ____ because ____.”\nHarm + Guardrail → “Group ____ could be hurt by ____. We’d add ____ (one safeguard).”\n\nChoose ONE guardrail type:\n\nPrioritize vulnerable groups\n\nCap disparities across areas (simple rule)\n\nHuman review + appeals for edge cases\n\nReplace a bad proxy (collect the right thing)\n\nPublish criteria & run a periodic bias check"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#lightning-shares-23-tables",
+    "href": "lecture/week2_slides.html#lightning-shares-23-tables",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Lightning shares (2–3 tables)",
+    "text": "Lightning shares (2–3 tables)\nIn ≤20 seconds, say:\n\nScenario, one proxy, one harm, one guardrail\n\nClass quick poll: Would that guardrail help?\n\n👍 Green light\n👎 Red light"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#why-census-data-matters",
+    "href": "lecture/week2_slides.html#why-census-data-matters",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Why Census Data Matters",
+    "text": "Why Census Data Matters\nCensus data is the foundation for:\n\nUnderstanding community demographics\nAllocating government resources\n\nTracking neighborhood change\nDesigning fair algorithms (like those we just discussed)\n\nConnection: The same demographic data used in census goes into many of the algorithms we analyzed"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#census-vs.-american-community-survey",
+    "href": "lecture/week2_slides.html#census-vs.-american-community-survey",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Census vs. American Community Survey",
+    "text": "Census vs. American Community Survey\n\n\nDecennial Census (2020)\n\nEveryone counted every 10 years\n9 basic questions: age, race, sex, housing\nConstitutional requirement\nDetermines political representation\n\n\nAmerican Community Survey (ACS)\n\n3% of households surveyed annually\nDetailed questions: income, education, employment, housing costs\nReplaced the old “long form” in 2005\nA big source of data we’ll use this semester"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#acs-estimates-what-you-need-to-know",
+    "href": "lecture/week2_slides.html#acs-estimates-what-you-need-to-know",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "ACS Estimates: What You Need to Know",
+    "text": "ACS Estimates: What You Need to Know\n1-Year Estimates (areas &gt; 65,000 people)\n\nMost current data, smallest sample\n\n5-Year Estimates (all areas including census tracts)\n\nMost reliable data, largest sample\nWhat you’ll use most often\n\nKey Point: All ACS data comes with margins of error - we’ll learn to work with uncertainty"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#census-geography-hierarchy",
+    "href": "lecture/week2_slides.html#census-geography-hierarchy",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Census Geography Hierarchy",
+    "text": "Census Geography Hierarchy\nNation\n├── Regions  \n├── States\n│   ├── Counties\n│   │   ├── Census Tracts (1,500-8,000 people)\n│   │   │   ├── Block Groups (600-3,000 people)  \n│   │   │   │   └── Blocks (≈85 people, Decennial only)\nMost policy analysis happens at:\n\nCounty level - state and regional planning\nCensus tract level - neighborhood analysis\nBlock group level - very local analysis (tempting, but big MOEs)"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#census-innovation-differential-privacy",
+    "href": "lecture/week2_slides.html#census-innovation-differential-privacy",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "2020 Census Innovation: Differential Privacy",
+    "text": "2020 Census Innovation: Differential Privacy\nThe Challenge: Modern computing can “re-identify” individuals from census data\nThe Solution: Add mathematical “noise” to protect privacy while preserving overall patterns\nThe Controversy: Some places now show populations living “underwater” or other impossible results\nWhy This Matters: Even “objective” data involves subjective choices about privacy vs. accuracy. Also, the errors."
+  },
+  {
+    "objectID": "lecture/week2_slides.html#accessing-census-data-in-r",
+    "href": "lecture/week2_slides.html#accessing-census-data-in-r",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Accessing Census Data in R",
+    "text": "Accessing Census Data in R\nTraditional approach: Download CSV files from Census website\nModern approach: Use R packages to access data directly\nBenefits of programmatic access:\n\nAlways get latest data\nReproducible workflows\n\nAutomatic geographic boundaries\nBuilt-in error handling\n\nWe’ll use the tidycensus package starting in Lab 1"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#understanding-acs-data-structure",
+    "href": "lecture/week2_slides.html#understanding-acs-data-structure",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Understanding ACS Data Structure",
+    "text": "Understanding ACS Data Structure\nData organized in tables:\n\nB19013 - Median Household Income\nB25003 - Housing Tenure (Own/Rent)\n\nB15003 - Educational Attainment\nB08301 - Commuting to Work\n\nEach table has multiple variables:\n\nB19013_001E = Median household income (estimate)\nB19013_001M = Median household income (margin of error)\n\nYou’ll learn to find the right variables for your research questions"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#working-with-margins-of-error",
+    "href": "lecture/week2_slides.html#working-with-margins-of-error",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Working with Margins of Error",
+    "text": "Working with Margins of Error\nEvery ACS estimate comes with uncertainty\nRule of thumb:\n\nLarge MOE relative to estimate = less reliable\nSmall MOE relative to estimate = more reliable\n\nIn your analysis:\n\nAlways report MOE alongside estimates\nBe cautious comparing estimates with overlapping error margins\nConsider using 5-year estimates for greater reliability"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#two-types-of-census-data",
+    "href": "lecture/week2_slides.html#two-types-of-census-data",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Two Types of Census Data",
+    "text": "Two Types of Census Data\n\n\nSummary Tables (what we’ll use mostly)\n\nPre-calculated statistics by geography\nMedian income, percent college-educated, etc.\nGood for: Mapping, comparing places\n\n\nPUMS - Individual Records\n\nAnonymous individual/household responses\nGood for: Custom analysis, regression models\nMore complex but more flexible"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#when-new-data-comes-out",
+    "href": "lecture/week2_slides.html#when-new-data-comes-out",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "When New Data Comes Out",
+    "text": "When New Data Comes Out\nACS 1-year estimates: Released in September (previous year’s data)\nACS 5-year estimates: Released in December\nDecennial Census: Released on rolling schedule over 2-3 years\nFor Lab 1: We’ll use 2018-2022 ACS 5-year estimates (latest available)"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#data-sources-youll-use",
+    "href": "lecture/week2_slides.html#data-sources-youll-use",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Data Sources You’ll Use",
+    "text": "Data Sources You’ll Use\nTIGER/Line Files\n\nGeographic boundaries (shapefiles)\nCensus tracts, counties, states\nNow released as shapefiles (easier to use!)\n\nHistorical Data Sources:\n\nNHGIS (nhgis.org) - Historical census data\nNeighborhood Change Database\nLongitudinal Tract Database - Track changes over time"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#live-demo-setup",
+    "href": "lecture/week2_slides.html#live-demo-setup",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Live Demo Setup",
+    "text": "Live Demo Setup\nLet’s see tidycensus in action with some basic examples:\n\n\nCode\nlibrary(tidycensus)\nlibrary(tidyverse)\n\n\n── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──\n✔ dplyr     1.1.4     ✔ readr     2.1.6\n✔ forcats   1.0.1     ✔ stringr   1.6.0\n✔ ggplot2   4.0.1     ✔ tibble    3.3.1\n✔ lubridate 1.9.4     ✔ tidyr     1.3.2\n✔ purrr     1.2.1     \n── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──\n✖ dplyr::filter() masks stats::filter()\n✖ dplyr::lag()    masks stats::lag()\nℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors\n\n\nCode\nlibrary(knitr)\n# Set API key (you'll get yours for Lab 1)\ncensus_api_key(\"42bf8a20a3df1def380f330cf7edad0dd5842ce6\")\n\n\nTo install your API key for use in future sessions, run this function with `install = TRUE`.\n\n\nFollow along: We’ll work through examples together, then you’ll practice in Lab 1"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#basic-get_acs-function",
+    "href": "lecture/week2_slides.html#basic-get_acs-function",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Basic get_acs() Function",
+    "text": "Basic get_acs() Function\nMost important function you’ll use:\n\n\nCode\n# Get state-level population data\nstate_pop &lt;- get_acs(\n  geography = \"state\",\n  variables = \"B01003_001\",  # Total population\n  year = 2022,\n  survey = \"acs5\"\n)\n\n\nGetting data from the 2018-2022 5-year ACS\n\n\nCode\nglimpse(state_pop)\n\n\nRows: 52\nColumns: 5\n$ GEOID    &lt;chr&gt; \"01\", \"02\", \"04\", \"05\", \"06\", \"08\", \"09\", \"10\", \"11\", \"12\", \"…\n$ NAME     &lt;chr&gt; \"Alabama\", \"Alaska\", \"Arizona\", \"Arkansas\", \"California\", \"Co…\n$ variable &lt;chr&gt; \"B01003_001\", \"B01003_001\", \"B01003_001\", \"B01003_001\", \"B010…\n$ estimate &lt;dbl&gt; 5028092, 734821, 7172282, 3018669, 39356104, 5770790, 3611317…\n$ moe      &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, N…\n\n\nKey parameters: geography, variables, year, survey"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#understanding-the-output",
+    "href": "lecture/week2_slides.html#understanding-the-output",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Understanding the Output",
+    "text": "Understanding the Output\nEvery ACS result includes:\n\nGEOID - Geographic identifier\nNAME - Human-readable location name\n\nvariable - Census variable code\nestimate - The actual value\nmoe - Margin of error\n\nThis is the foundation for all your analysis"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#working-with-multiple-variables",
+    "href": "lecture/week2_slides.html#working-with-multiple-variables",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Working with Multiple Variables",
+    "text": "Working with Multiple Variables\n\n\nCode\n# Get income and population for Pennsylvania counties\npa_data &lt;- get_acs(\n  geography = \"county\",\n  variables = c(\n    total_pop = \"B01003_001\",\n    median_income = \"B19013_001\"\n  ),\n  state = \"PA\",\n  year = 2022,\n  output = \"wide\"  # Makes analysis easier\n)\n\n\nGetting data from the 2018-2022 5-year ACS\n\n\nCode\nhead(pa_data)\n\n\n# A tibble: 6 × 6\n  GEOID NAME                 total_popE total_popM median_incomeE median_incomeM\n  &lt;chr&gt; &lt;chr&gt;                     &lt;dbl&gt;      &lt;dbl&gt;          &lt;dbl&gt;          &lt;dbl&gt;\n1 42001 Adams County, Penns…     104604         NA          78975           3334\n2 42003 Allegheny County, P…    1245310         NA          72537            869\n3 42005 Armstrong County, P…      65538         NA          61011           2202\n4 42007 Beaver County, Penn…     167629         NA          67194           1531\n5 42009 Bedford County, Pen…      47613         NA          58337           2606\n6 42011 Berks County, Penns…     428483         NA          74617           1191\n\n\nNote: output = \"wide\" gives you one row per place, multiple columns for variables"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#data-cleaning-essentials",
+    "href": "lecture/week2_slides.html#data-cleaning-essentials",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Data Cleaning Essentials",
+    "text": "Data Cleaning Essentials\nClean up messy geographic names:\n\n\nCode\npa_clean &lt;- pa_data %&gt;%\n  mutate(\n    # Remove state name from county names\n    county_name = str_remove(NAME, \", Pennsylvania\"),\n    # Remove \"County\" word\n    county_name = str_remove(county_name, \" County\")\n  )\n\n# Compare before and after\nselect(pa_clean, NAME, county_name)\n\n\n# A tibble: 67 × 2\n   NAME                           county_name\n   &lt;chr&gt;                          &lt;chr&gt;      \n 1 Adams County, Pennsylvania     Adams      \n 2 Allegheny County, Pennsylvania Allegheny  \n 3 Armstrong County, Pennsylvania Armstrong  \n 4 Beaver County, Pennsylvania    Beaver     \n 5 Bedford County, Pennsylvania   Bedford    \n 6 Berks County, Pennsylvania     Berks      \n 7 Blair County, Pennsylvania     Blair      \n 8 Bradford County, Pennsylvania  Bradford   \n 9 Bucks County, Pennsylvania     Bucks      \n10 Butler County, Pennsylvania    Butler     \n# ℹ 57 more rows\n\n\nFunctions you’ll use: str_remove(), str_extract(), str_replace()"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#calculating-data-reliability",
+    "href": "lecture/week2_slides.html#calculating-data-reliability",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Calculating Data Reliability",
+    "text": "Calculating Data Reliability\nThis is crucial for policy work:\n\n\nCode\npa_reliability &lt;- pa_clean %&gt;%\n  mutate(\n    # Calculate MOE as percentage of estimate\n    moe_percentage = round((median_incomeM / median_incomeE) * 100, 2),\n    \n    # Create reliability categories\n    reliability = case_when(\n      moe_percentage &lt; 5 ~ \"High Confidence\",\n      moe_percentage &gt;= 5 & moe_percentage &lt;= 10 ~ \"Moderate\",\n      moe_percentage &gt; 10 ~ \"Low Confidence\"\n    )\n  )\n\ncount(pa_reliability, reliability)\n\n\n# A tibble: 2 × 2\n  reliability         n\n  &lt;chr&gt;           &lt;int&gt;\n1 High Confidence    57\n2 Moderate           10\n\n\nKey functions: case_when() for categories, MOE calculations"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#finding-patterns-with-dplyr",
+    "href": "lecture/week2_slides.html#finding-patterns-with-dplyr",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Finding Patterns with dplyr",
+    "text": "Finding Patterns with dplyr\n\nFind counties with highest uncertainty\nSummarize by reliability category\n\n\n\nCode\n# Find counties with highest uncertainty\nhigh_uncertainty &lt;- pa_reliability %&gt;%\n  filter(moe_percentage &gt; 8) %&gt;%\n  arrange(desc(moe_percentage)) %&gt;%\n  select(county_name, median_incomeE, moe_percentage)\n\n# Summary by reliability category  \nreliability_summary &lt;- pa_reliability %&gt;%\n  group_by(reliability) %&gt;%\n  summarize(\n    counties = n(),\n    avg_income = round(mean(median_incomeE, na.rm = TRUE), 0)\n  )"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#professional-tables",
+    "href": "lecture/week2_slides.html#professional-tables",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Professional Tables",
+    "text": "Professional Tables\nMaking results presentation-ready:\n\n\nCode\n# Create formatted table\nkable(high_uncertainty,\n      col.names = c(\"County\", \"Median Income\", \"MOE %\"),\n      caption = \"Counties with Highest Income Data Uncertainty\",\n      format.args = list(big.mark = \",\"))\n\n\n\nCounties with Highest Income Data Uncertainty\n\n\nCounty\nMedian Income\nMOE %\n\n\n\n\nForest\n46,188\n9.99\n\n\nSullivan\n62,910\n9.25\n\n\n\n\n\nKey points:\n\nUse kable() for professional formatting\nAdd descriptive column names and captions\n\nFormat numbers appropriately"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#quick-practice",
+    "href": "lecture/week2_slides.html#quick-practice",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Quick Practice",
+    "text": "Quick Practice\nTry this with a neighbor (5 minutes):\nUsing the pa_reliability data we just created:\n\nFilter for counties with “High Confidence” data\nArrange by median income (highest first)\n\nSelect county name and median income\nSlice the top 3 counties\n\nWe’ll share answers before moving on"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#policy-connection",
+    "href": "lecture/week2_slides.html#policy-connection",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Policy Connection",
+    "text": "Policy Connection\nWhy this matters:\n\nAlgorithmic fairness: Unreliable data can bias automated decisions\nResource allocation: Know which areas need extra attention\nEquity analysis: Some communities may be systematically under-counted\nProfessional credibility: Always assess your data quality\n\nThis connects directly to our algorithmic bias discussion"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#from-algorithms-to-analysis",
+    "href": "lecture/week2_slides.html#from-algorithms-to-analysis",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "From Algorithms to Analysis",
+    "text": "From Algorithms to Analysis\nToday’s key connections:\nAlgorithmic Decision Making → Understanding why your analysis matters for real policy decisions\nData Subjectivity → Why we emphasize transparent, reproducible methods in this class\nCensus Data → The foundation for most urban planning and policy analysis\nR Skills → The tools to do this work professionally and ethically"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#questions-for-reflection",
+    "href": "lecture/week2_slides.html#questions-for-reflection",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Questions for Reflection",
+    "text": "Questions for Reflection\nAs you work with data this semester, ask:\n\nWhat assumptions am I making in my data choices?\nWho might be excluded from my analysis?\nHow could my findings be misused if taken out of context?\nWhat would I want policymakers to understand about my methods?\n\nThese questions will make you a more thoughtful analyst and better future policymaker"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#before-next-class",
+    "href": "lecture/week2_slides.html#before-next-class",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Before Next Class",
+    "text": "Before Next Class\nStart Lab 1 - census data exploration (begins today!) Aim to finish section 2 - we will continue this work in class next week"
+  },
+  {
+    "objectID": "lecture/week2_slides.html#questions",
+    "href": "lecture/week2_slides.html#questions",
+    "title": "Algorithmic Decision Making & Census Data",
+    "section": "Questions?",
+    "text": "Questions?"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html",
+    "href": "lecture/week_01-slides.html",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "",
+    "text": "What you’ll learn - concepts\nHow you’ll learn it - the course structure\nThe tools we’ll use - software\n\n\n\n\n\nGit fundamentals for data science\nGitHub Classroom workflow\nCollaborative coding practices\n\n\n\n\n\nQuarto for professional documentation\nMarkdown basics for clear communication\nRStudio settings for reproducibility\n\n\n\n\n\nProject organization best practices\nFile management and relative paths\nWeekly workflow you’ll follow all semester\n\n\n\n\n\ndplyr fundamentals and function patterns\nPipes for readable code\ngroup_by() and summarize() for policy analysis\n\n\n\n\n\nPortfolio repository creation\nLive demonstration of complete workflow\nYour first analysis in professional format"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#part-1-course-overview",
+    "href": "lecture/week_01-slides.html#part-1-course-overview",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "",
+    "text": "What you’ll learn - concepts\nHow you’ll learn it - the course structure\nThe tools we’ll use - software"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#part-2-github-version-control",
+    "href": "lecture/week_01-slides.html#part-2-github-version-control",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "",
+    "text": "Git fundamentals for data science\nGitHub Classroom workflow\nCollaborative coding practices"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#part-3-reproducible-research-tools",
+    "href": "lecture/week_01-slides.html#part-3-reproducible-research-tools",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "",
+    "text": "Quarto for professional documentation\nMarkdown basics for clear communication\nRStudio settings for reproducibility"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#part-4-r-project-workflow",
+    "href": "lecture/week_01-slides.html#part-4-r-project-workflow",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "",
+    "text": "Project organization best practices\nFile management and relative paths\nWeekly workflow you’ll follow all semester"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#part-5-data-analysis-with-tidyverse",
+    "href": "lecture/week_01-slides.html#part-5-data-analysis-with-tidyverse",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "",
+    "text": "dplyr fundamentals and function patterns\nPipes for readable code\ngroup_by() and summarize() for policy analysis"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#part-6-hands-on-setup",
+    "href": "lecture/week_01-slides.html#part-6-hands-on-setup",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "",
+    "text": "Portfolio repository creation\nLive demonstration of complete workflow\nYour first analysis in professional format"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#what-this-course-is-about",
+    "href": "lecture/week_01-slides.html#what-this-course-is-about",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "What This Course Is About",
+    "text": "What This Course Is About\n\nAdvanced spatial analysis for urban planning and public policy\nData science tools within policy context\nFocus on understanding concepts rather than just completing code\nProfessional portfolio development using modern tools"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#unlike-private-sector-data-science",
+    "href": "lecture/week_01-slides.html#unlike-private-sector-data-science",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Unlike Private Sector Data Science",
+    "text": "Unlike Private Sector Data Science\n\nPublic sector is rarely about optimization\nPublic goods, governance, equity considerations\nTransparency and interpretability are crucial\nAlgorithmic bias has real consequences for communities"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#course-structure",
+    "href": "lecture/week_01-slides.html#course-structure",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Course structure",
+    "text": "Course structure\n\nOur weekly meetings will be part lecture, part lab\nYou complete:\n\n5 lab assignments (individual)\nMid-term, final (group projects)\n\nSyllabus on Canvas and github"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#assignment-weighting",
+    "href": "lecture/week_01-slides.html#assignment-weighting",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Assignment weighting",
+    "text": "Assignment weighting\nProblem: AI tools make it easy to complete code without understanding\nSolution:\n\n35%: 10 weekly in-class quizzes (test conceptual understanding)\n25%: 5 lab assignments (focus on learning)\nGitHub-based workflow (professional skills)"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#the-tools-well-use",
+    "href": "lecture/week_01-slides.html#the-tools-well-use",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "The Tools We’ll Use",
+    "text": "The Tools We’ll Use\nGitHub: Industry standard for version control and collaboration\nQuarto: Modern approach to reproducible research and documentation\nR: Powerful for spatial analysis and policy-focused statistics"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#professional-development",
+    "href": "lecture/week_01-slides.html#professional-development",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Professional Development",
+    "text": "Professional Development\nThese aren’t just “class tools” - they’re career tools:\n\nPortfolio employers can see\nVersion control skills for any data job\nProfessional documentation practices"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#what-is-git",
+    "href": "lecture/week_01-slides.html#what-is-git",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "What is Git?",
+    "text": "What is Git?\nVersion control system that tracks changes in files\nThink of it as:\n\n“Track changes” for code projects\nTime machine for your work\nCollaboration tool for teams"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#what-is-github",
+    "href": "lecture/week_01-slides.html#what-is-github",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "What is GitHub?",
+    "text": "What is GitHub?\nCloud hosting for Git repositories\n\nBackup your work in the cloud\n\nShare projects with others\nDeploy websites (like our portfolios)\nCollaborate on code projects"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#key-github-concepts",
+    "href": "lecture/week_01-slides.html#key-github-concepts",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Key GitHub Concepts",
+    "text": "Key GitHub Concepts\nRepository (repo): Folder containing your project files\nCommit: Snapshot of your work at a point in time\nPush: Send your changes to GitHub cloud\nPull: Get latest changes from GitHub cloud\nClone: Local copy of your repo"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#github-in-this-course",
+    "href": "lecture/week_01-slides.html#github-in-this-course",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "GitHub in This Course",
+    "text": "GitHub in This Course\nYour workflow each week:\n1. Edit files in RStudio\n2. Commit changes with descriptive message  \n3. Push to GitHub\n4. Your portfolio website updates automatically\nThis becomes second nature by mid-semester!"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#what-is-quarto",
+    "href": "lecture/week_01-slides.html#what-is-quarto",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "What is Quarto?",
+    "text": "What is Quarto?\nPublishing system that combines:\n\nCode (R, Python, etc.)\nText (explanations, analysis)\nOutput (plots, tables, results)\n\nInto professional documents"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#why-quarto",
+    "href": "lecture/week_01-slides.html#why-quarto",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Why Quarto?",
+    "text": "Why Quarto?\nReproducible research:\n\nCode and explanation in one place\nOthers can re-run your analysis\nProfessional presentation\n\nCareer relevance:\n\nIndustry standard for data science communication\nCreates websites, PDFs, presentations\nUsed at major tech companies and government agencies"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#quarto-vs.-r-markdown",
+    "href": "lecture/week_01-slides.html#quarto-vs.-r-markdown",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Quarto vs. R Markdown",
+    "text": "Quarto vs. R Markdown\nIf you know R Markdown:\n\nQuarto is the “next generation”\nBetter website creation\nWorks with multiple programming languages\nSame basic concept, improved features"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#quarto-document-structure",
+    "href": "lecture/week_01-slides.html#quarto-document-structure",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Quarto Document Structure",
+    "text": "Quarto Document Structure\nYAML header:\n---\ntitle: \"My Analysis\" \nauthor: \"Your Name\"\ndate: today\nformat: html\n---\nR code chunk:\nlibrary(tidyverse)\ndata &lt;- read_csv(\"data/car_sales_data.csv\")"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#text-formatting",
+    "href": "lecture/week_01-slides.html#text-formatting",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Text Formatting",
+    "text": "Text Formatting\n\nMarkdown is a “markup language”\nYou will use this in Quarto and GitHub\nIt is also used in many other places (e.g., Wiki, Notion, Slack)\n\n**Bold text**\n*Italic text*\n***Bold and italic***\n`code text`\n~~Strikethrough~~\nBold text\nItalic text\nBold and italic\ncode text\nStrikethrough"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#headers",
+    "href": "lecture/week_01-slides.html#headers",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Headers",
+    "text": "Headers\n# Main Header\n## Section Header  \n### Subsection Header\nUse headers to organize your analysis sections."
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#lists",
+    "href": "lecture/week_01-slides.html#lists",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Lists",
+    "text": "Lists\n## Unordered List\n- Item 1\n- Item 2\n  - Sub-item A\n  - Sub-item B\n\n## Ordered List  \n1. First item\n2. Second item\n3. Third item"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#links-and-images",
+    "href": "lecture/week_01-slides.html#links-and-images",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Links and Images",
+    "text": "Links and Images\n[Link text](https://example.com)\n[Link to another page](about.qmd)\n![Alt text](path/to/image.png)\nEssential for professional portfolios:\n\nLink to data sources\nReference course materials\n\nInclude relevant images/plots"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#why-r-for-policy-analysis",
+    "href": "lecture/week_01-slides.html#why-r-for-policy-analysis",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Why R for Policy Analysis?",
+    "text": "Why R for Policy Analysis?\n\nFree and open source\nExcellent for spatial data\nStrong statistical capabilities\nLarge community in urban planning/policy\nReproducible research workflows"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#rstudio-projects-essential-habit",
+    "href": "lecture/week_01-slides.html#rstudio-projects-essential-habit",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "RStudio Projects: Essential Habit",
+    "text": "RStudio Projects: Essential Habit\nAlways work within projects for:\n\nOrganized file structure - data, scripts, outputs in one place\nRelative file paths - \"data/cars.csv\" works for everyone\n\nVersion control integration - Git works seamlessly\nReproducible workflow - others can run your code\n\nProfessional standard - employers expect this!"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#project-benefits-for-this-course",
+    "href": "lecture/week_01-slides.html#project-benefits-for-this-course",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Project Benefits for This Course",
+    "text": "Project Benefits for This Course\n# This works reliably in projects:\ncar_data &lt;- read_csv(\"data/car_sales_data.csv\")\n\n# This breaks when shared:\ncar_data &lt;- read_csv(\"/Users/yourname/Desktop/cars.csv\")\nWe’ll work in projects all semester - builds good habits!"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#creating-your-project",
+    "href": "lecture/week_01-slides.html#creating-your-project",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Creating Your Project",
+    "text": "Creating Your Project\nStep 1: Clone your GitHub repository - You can clone in GitHub desktop or through the terminal in RStudio - GitHub desktop is easier at first, but terminal is faster once you learn how\ngit clone https://github.com/username/cpln5920-portfolio.git\ncd cpln5920-portfolio\nStep 2: Open in RStudio\n\nOpen RStudio\nFile → Open Project\nNavigate to your cloned folder\nSelect the .Rproj file"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#project-file-structure",
+    "href": "lecture/week_01-slides.html#project-file-structure",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Project File Structure",
+    "text": "Project File Structure\nOrganized structure from day one:\ncpln5920-portfolio/\n├── .Rproj\n├── .gitignore\n├── data/\n│   ├── raw/\n│   └── processed/\n├── scripts/\n├── docs/\n├── outputs/\n│   ├── figures/\n│   └── tables/\n└── week01/\n    ├── index.qmd\n    └── data/"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#why-this-structure-matters",
+    "href": "lecture/week_01-slides.html#why-this-structure-matters",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Why This Structure Matters",
+    "text": "Why This Structure Matters\nProfessional habit:\n\nAnyone can understand your project layout\nScripts know where to find data files\nEasy to maintain as projects grow\nIndustry standard for data science teams"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#file-naming-conventions",
+    "href": "lecture/week_01-slides.html#file-naming-conventions",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "File Naming Conventions",
+    "text": "File Naming Conventions\nBe consistent and descriptive:\n# Good examples:\nweek01_exploratory_analysis.qmd\n2025-09-08_census_data_cleaning.R\nphiladelphia_housing_2020-2024.csv\n\n# Avoid these:\nanalysis.qmd\ntemp.R\ndata.csv\nnew_version_final.qmd\nnew_version_final2_final_final.qmd"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#working-with-data-files",
+    "href": "lecture/week_01-slides.html#working-with-data-files",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Working with Data Files",
+    "text": "Working with Data Files\nBest practices for this course:\n# Raw data (never edit these!)\nraw_census &lt;- read_csv(here(\"data\", \"raw\", \"acs_2022_philadelphia.csv\"))\n\n# Process and save cleaned versions\nclean_census &lt;- raw_census %&gt;%\n  clean_names() %&gt;%\n  filter(!is.na(median_income))\n\nwrite_csv(clean_census, here(\"data\", \"processed\", \"acs_2022_clean.csv\"))\n\n# Use processed data in analysis\nanalysis_data &lt;- read_csv(here(\"data\", \"processed\", \"acs_2022_clean.csv\"))"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#rstudio-settings-for-reproducibility",
+    "href": "lecture/week_01-slides.html#rstudio-settings-for-reproducibility",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "RStudio Settings for Reproducibility",
+    "text": "RStudio Settings for Reproducibility\nCritical settings to change RIGHT NOW:\nTools → Global Options → General:\n\nUncheck “Restore most recently opened project at startup”\nUncheck “Restore previously opened source documents”\n\nTools → Global Options → Workspace:\n\nUncheck “Restore .RData into workspace at startup”\n\nSet “Save workspace to .RData on exit” to “Never”"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#why-these-settings-matter",
+    "href": "lecture/week_01-slides.html#why-these-settings-matter",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Why These Settings Matter",
+    "text": "Why These Settings Matter\nWithout these changes:\n\nOld objects stick around between sessions\nCode appears to work but fails for others\nHidden dependencies break reproducibility\nYour portfolio assignments might not run for TAs!\n\nWith these settings:\n\nFresh environment every time\nCode must be complete and self-contained\nTrue reproducibility\nProfessional habits from day one"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#managing-r-environment",
+    "href": "lecture/week_01-slides.html#managing-r-environment",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Managing R Environment",
+    "text": "Managing R Environment\nKeep your environment clean:\n# Start each session fresh\nrm(list = ls())\n\n# Use projects instead of setwd()\n# NEVER use setwd() in your code!\n\n# Check your working directory\ngetwd()  # Should be your project root\n\n# Use here() for all file paths\nhere(\"data\", \"my_file.csv\")"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#tibbles-vs-data-frames",
+    "href": "lecture/week_01-slides.html#tibbles-vs-data-frames",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Tibbles vs Data Frames",
+    "text": "Tibbles vs Data Frames\nTidyverse uses “tibbles” - enhanced data frames:\n# Traditional data frame\nclass(data)\n# [1] \"data.frame\"\n\n# Convert to tibble  \ncar_data &lt;- as_tibble(data)\nclass(car_data)\n# [1] \"tbl_df\" \"tbl\" \"data.frame\""
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#why-tibbles-are-better",
+    "href": "lecture/week_01-slides.html#why-tibbles-are-better",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Why Tibbles Are Better",
+    "text": "Why Tibbles Are Better\nSmarter printing:\n\nShows first 10 rows by default\nDisplays column types\nFits nicely on screen\n\nWe’ll see the difference with our car data…"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#essential-dplyr-functions",
+    "href": "lecture/week_01-slides.html#essential-dplyr-functions",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Essential dplyr Functions",
+    "text": "Essential dplyr Functions\nWe’ll use these constantly:\n\nselect() - choose columns\nfilter() - choose rows\n\nmutate() - create new variables\nsummarize() - calculate statistics\ngroup_by() - operate on groups"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#dplyr-function-rules",
+    "href": "lecture/week_01-slides.html#dplyr-function-rules",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "dplyr Function Rules",
+    "text": "dplyr Function Rules\nAll dplyr functions follow the same pattern:\n\nFirst argument is always a data frame\nSubsequent arguments describe which columns to operate on (using variable names without quotes)\nOutput is always a new data frame\n\nThis consistency makes dplyr predictable and easy to learn!"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#function-pattern-examples",
+    "href": "lecture/week_01-slides.html#function-pattern-examples",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Function Pattern Examples",
+    "text": "Function Pattern Examples\n# Rule 1: Data frame first\nselect(car_data, Manufacturer, Price)\nfilter(car_data, Price &gt; 20000)\nmutate(car_data, price_k = Price / 1000)\n\n# Rule 2: Column names without quotes\nselect(car_data, Manufacturer, Model, Price)  # Not \"Manufacturer\"\nfilter(car_data, Year &gt;= 2020, Mileage &lt; 50000)\n\n# Rule 3: Always returns a new data frame\nnew_data &lt;- select(car_data, Manufacturer, Price)\n# car_data is unchanged, new_data contains selected columns"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#live-demo-basic-dplyr",
+    "href": "lecture/week_01-slides.html#live-demo-basic-dplyr",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Live Demo: Basic dplyr",
+    "text": "Live Demo: Basic dplyr\n\n\nCode\nlibrary(tidyverse)\n\n# Load car sales data\ncar_data &lt;- read_csv(\"data/car_sales_data.csv\")\n\n# Basic exploration\nglimpse(car_data)\nnames(car_data)"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#data-manipulation-pipeline",
+    "href": "lecture/week_01-slides.html#data-manipulation-pipeline",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Data Manipulation Pipeline",
+    "text": "Data Manipulation Pipeline\nPipes (%&gt;%) are the magic of dplyr:\n# The power of pipes - read as \"then\"\ncar_summary &lt;- data %&gt;%\n  filter(`Year of manufacture` &gt;= 2020) %&gt;%      # Recent models only\n  select(Manufacturer, Model, Price, Mileage) %&gt;% # Key variables\n  mutate(price_k = Price / 1000) %&gt;%             # Convert to thousands\n  filter(Mileage &lt; 50000) %&gt;%                    # Low mileage cars\n  group_by(Manufacturer) %&gt;%                     # Group by brand\n  summarize(                                     # Calculate statistics\n    avg_price = mean(price_k, na.rm = TRUE),\n    count = n()\n  )"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#understanding-pipes",
+    "href": "lecture/week_01-slides.html#understanding-pipes",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Understanding Pipes",
+    "text": "Understanding Pipes\nWhat is %&gt;%?\n\nTakes the output from the left side\nFeeds it as the first argument to the function on the right side\nThink: “and then…”\n\nWithout pipes (nested functions):\n# Hard to read - inside out!\ncar_summary &lt;- summarize(\n  group_by(\n    filter(\n      mutate(\n        select(filter(data, `Year of manufacture` &gt;= 2020), \n               Manufacturer, Model, Price, Mileage),\n        price_k = Price / 1000),\n      Mileage &lt; 50000),\n    Manufacturer),\n  avg_price = mean(price_k, na.rm = TRUE),\n  count = n()\n)"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#without-pipes-multiple-objects",
+    "href": "lecture/week_01-slides.html#without-pipes-multiple-objects",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Without Pipes (Multiple Objects)",
+    "text": "Without Pipes (Multiple Objects)\nAlternative: create many intermediate objects\n# Clutters your environment\nrecent_cars &lt;- filter(data, `Year of manufacture` &gt;= 2020)\nkey_vars &lt;- select(recent_cars, Manufacturer, Model, Price, Mileage)\nprice_thousands &lt;- mutate(key_vars, price_k = Price / 1000)\nlow_mileage &lt;- filter(price_thousands, Mileage &lt; 50000)\ngrouped_cars &lt;- group_by(low_mileage, Manufacturer)\ncar_summary &lt;- summarize(grouped_cars, \n                        avg_price = mean(price_k, na.rm = TRUE),\n                        count = n())\nProblems: Lots of temporary objects, hard to follow the logic"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#why-pipes-are-better",
+    "href": "lecture/week_01-slides.html#why-pipes-are-better",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Why Pipes Are Better",
+    "text": "Why Pipes Are Better\nReadable: Follow the logical flow of analysis\nEfficient: No temporary objects cluttering environment\nDebuggable: Easy to run line-by-line\nProfessional: Industry standard for data science"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#reading-pipes-aloud",
+    "href": "lecture/week_01-slides.html#reading-pipes-aloud",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Reading Pipes Aloud",
+    "text": "Reading Pipes Aloud\ncar_data %&gt;%\n  filter(Price &gt; 15000) %&gt;%\n  select(Manufacturer, Price) %&gt;%\n  group_by(Manufacturer) %&gt;%\n  summarize(avg_price = mean(Price))\nRead as:\n“Take car_data, then filter for cars over $15,000, then select manufacturer and price columns, then group by manufacturer, then calculate average price”"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#understanding-group_by-and-summarize",
+    "href": "lecture/week_01-slides.html#understanding-group_by-and-summarize",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Understanding group_by() and summarize()",
+    "text": "Understanding group_by() and summarize()\nThese functions work as a team:\n\ngroup_by() - sets up grouping for subsequent operations\nsummarize() - collapses rows into summary statistics"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#how-group_by-works",
+    "href": "lecture/week_01-slides.html#how-group_by-works",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "How group_by() Works",
+    "text": "How group_by() Works\n# group_by() doesn't change what you see...\ncar_data %&gt;% \n  group_by(Manufacturer)\n\n# ...but it sets up invisible grouping for next operations\n# Look for: \"Groups: Manufacturer [5]\" in the output\nKey insight: group_by() prepares the data, doesn’t transform it yet"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#how-summarize-works",
+    "href": "lecture/week_01-slides.html#how-summarize-works",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "How summarize() Works",
+    "text": "How summarize() Works\n# Without grouping - one row of results\ncar_data %&gt;%\n  summarize(\n    avg_price = mean(Price, na.rm = TRUE),\n    total_cars = n()\n  )\n# Result: 1 row with overall averages\n\n# With grouping - one row per group\ncar_data %&gt;%\n  group_by(Manufacturer) %&gt;%\n  summarize(\n    avg_price = mean(Price, na.rm = TRUE),\n    total_cars = n()\n  )\n# Result: 5 rows (one per manufacturer)"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#before-and-after-example",
+    "href": "lecture/week_01-slides.html#before-and-after-example",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Before and After Example",
+    "text": "Before and After Example\nOriginal data (imagine this):\nManufacturer  Price   Mileage\nToyota       25000    30000\nToyota       28000    15000  \nHonda        22000    45000\nHonda        30000    20000\nFord         35000    10000\nAfter group_by(Manufacturer) %&gt;% summarize(…):\nManufacturer  avg_price  total_cars\nToyota       26500      2\nHonda        26000      2  \nFord         35000      1"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#common-summarize-functions",
+    "href": "lecture/week_01-slides.html#common-summarize-functions",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Common summarize() Functions",
+    "text": "Common summarize() Functions\nEssential summary functions:\ncar_data %&gt;%\n  group_by(Manufacturer) %&gt;%\n  summarize(\n    count = n(),                          # Number of rows\n    avg_price = mean(Price, na.rm = TRUE), # Average\n    med_price = median(Price, na.rm = TRUE), # Median  \n    min_price = min(Price, na.rm = TRUE),   # Minimum\n    max_price = max(Price, na.rm = TRUE),   # Maximum\n    std_dev = sd(Price, na.rm = TRUE)       # Standard deviation\n  )"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#policy-analysis-applications",
+    "href": "lecture/week_01-slides.html#policy-analysis-applications",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Policy Analysis Applications",
+    "text": "Policy Analysis Applications\nPerfect for policy questions like:\n\nAverage household income by neighborhood\nCrime rates by police district\n\nHousing prices by year\nTransportation usage by demographic group\nEducational outcomes by school district\n\nPattern: group_by(category) %&gt;% summarize(metric)"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#weekly-pattern",
+    "href": "lecture/week_01-slides.html#weekly-pattern",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Weekly Pattern",
+    "text": "Weekly Pattern\nTuesday Class: - New concepts and methods - Hands-on coding practice - Lab work with TA support\nDuring Week: - Complete portfolio assignments - Weekly notes and reflection - Office hours for help"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#assessment-philosophy",
+    "href": "lecture/week_01-slides.html#assessment-philosophy",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Assessment Philosophy",
+    "text": "Assessment Philosophy\nFocus on understanding, not perfect code:\n\nWeekly quizzes test concepts\nLow stakes labs encourage experimentation\nProfessional development throughout"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#portfolio-development",
+    "href": "lecture/week_01-slides.html#portfolio-development",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Portfolio Development",
+    "text": "Portfolio Development\nYour GitHub portfolio will include:\n\nCompleted lab analyses\nProfessional documentation\nWork you can show employers"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#portfolio-setup-process",
+    "href": "lecture/week_01-slides.html#portfolio-setup-process",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Portfolio Setup Process",
+    "text": "Portfolio Setup Process\n\nAccept GitHub Classroom assignment\nClone repository to your computer\n\nCustomize with your information\nEnable GitHub Pages\nComplete first analysis"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#what-well-accomplish",
+    "href": "lecture/week_01-slides.html#what-well-accomplish",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "What We’ll Accomplish",
+    "text": "What We’ll Accomplish\nBy end of today:\n\nWorking portfolio repository\nLive website with your work\nFirst R analysis in professional format\nFamiliarity with workflow"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#support-available",
+    "href": "lecture/week_01-slides.html#support-available",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Support Available",
+    "text": "Support Available\n\nAllison and Zhanchao circulating during hands-on time\nOffice hours starting this week\nCanvas discussion for course questions"
+  },
+  {
+    "objectID": "lecture/week_01-slides.html#ready-to-get-started",
+    "href": "lecture/week_01-slides.html#ready-to-get-started",
+    "title": "Welcome to CPLN 5920/MUSA 5080",
+    "section": "Ready to Get Started?",
+    "text": "Ready to Get Started?\nNext: Portfolio setup + Lab 0\nRemember: This is a learning process - ask for help when you need it!"
   }
 ]

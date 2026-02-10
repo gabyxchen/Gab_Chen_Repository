@@ -177,8 +177,8 @@ kable(col.names = c(
 # Use filter() to select 2-3 counties from your county_reliability data
 # Store the selected counties in a variable called selected_counties
 selected_counties <- pa_reliability %>%
-  filter(moe_percentage > 9.5 |
-  moe_percentage > 4.8 & moe_percentage < 5)
+  group_by(reliability) %>%
+  slice(1)
 
 # Display the selected counties with their key characteristics
 # Show: county name, median income, MOE percentage, reliability category
@@ -208,11 +208,15 @@ race_vars <- c(
   totpop = "B03002_001" # total population
 )
 # Use get_acs() to retrieve tract-level data
+# Census API bug, failed at Forest and Pike County
+# To avoid the Census API bug, choose Adams and Cameron County
+
+county_fip <- c("42001", "42023") # Adams and Cameron
+
 tract_data <- get_acs(
   geography = "tract",
   variables = race_vars,
   state = "PA",
-  county = c("42053","42103"),
   year = 2022,
   survey = "acs5",
   output = "wide"
@@ -368,7 +372,13 @@ kable(
 
 **Executive Summary:**
 
-[Your integrated 4-paragraph summary here]
+[Across the analysis of census data reliability at county levels in Pennsylvania, approximately 85% of the state’s 67 counties have a margin of error below 5% (“High Confidence”). Approximately 15% of all counties have a margin of error between 5% to 10% (“Moderate”).No county exhibits a margin of error exceeding 10% (“Low Confidence”), indicating that median income estimates at the county level are generally reliable. 
+One county was selected from each MOE reliability category to conduct a tract-level analysis of data reliability. Examining the margins of error associated with racial population shares at the census tract level reveals that many tracts in Pennsylvania experience some degree of MOE-related data quality issues. On average, tracts with higher MOE issues tend to have larger population sizes and more racially homogeneous compositions, characterized by a higher proportion of White residents and smaller shares of Black and Hispanic or Latino populations.
+These patterns suggest that higher MOE issues are driven by both total population size and the interaction between survey sampling limitations and small subgroup populations, particularly in racially homogeneous tracts. When using census data to inform policy decisions, special care should be taken in interpreting estimates for these communities to avoid introducing statistical bias into policy design and implementation:
+To address systematic MOE issues, the Department should integrate data quality metrics directly into analytic and algorithmic workflows, particularly for tract-level decision-making. The following strategic recommendations outline practical steps to mitigate data uncertainty and reduce the risk of biased policy outcomes:
+1.	Incorporate data quality thresholds into decision-making.
+2.	Supplement ACS data with local or administrative data.
+3.	Prioritize transparency and documentation.]
 
 ## 6.3 Specific Recommendations
 
@@ -382,23 +392,47 @@ kable(
 # - High Confidence: "Safe for algorithmic decisions"
 # - Moderate Confidence: "Use with caution - monitor outcomes"  
 # - Low Confidence: "Requires manual review or additional data"
+pa_recommendation <- pa_reliability %>%
+  mutate(
+    recommendation = case_when(
+      reliability == "High Confidence" ~ "Safe for algorithmic decisions",
+      reliability == "Moderate" ~ "Use with caution - monitor outcomes",
+      reliability == "Low Confidence" ~ "Requires manual review or additional data",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  select(county_name, medincE, moe_percentage, reliability, recommendation)
 
 # Format as a professional table with kable()
+pa_recommendation %>%
+  
+kable(
+  col.names = c(
+    "County", 
+    "Median Income", 
+    "MOE Percentage (%)", 
+    "MOE reliability", 
+    "Algorithm Recommendation"
+  ),
+  caption = "Algorithmic Use Recommendations Based on County-Level Data Reliability"
+)
+
 ```
 
 **Key Recommendations:**
 
 **Your Task:** Use your analysis results to provide specific guidance to the department.
 
-1. **Counties suitable for immediate algorithmic implementation:** [List counties with high confidence data and explain why they're appropriate]
+1. **Counties suitable for immediate algorithmic implementation:** [Counties classified as High Confidence—with low MOE percentages—are appropriate for immediate use in algorithmic decision-making. In these counties, median income estimates are statistically reliable, reducing the risk that automated systems will misallocate resources or misclassify need. Algorithms applied in these contexts can be expected to perform consistently, provided routine validation checks remain in place. (Adams, Allegheny, Armstrong, Beaver, Bedford, etc.)]
 
-2. **Counties requiring additional oversight:** [List counties with moderate confidence data and describe what kind of monitoring would be needed]
+2. **Counties requiring additional oversight:** [Counties with Moderate Confidence data should be included in algorithmic workflows but paired with active monitoring and evaluation. In these areas, algorithmic outputs should be reviewed periodically against observed outcomes to detect potential bias or instability. Incorporating performance audits or sensitivity checks can help ensure that moderate data uncertainty does not translate into systematic policy errors. (Forest, Greene, Elk, Cameron, Carbon, etc.)]
 
-3. **Counties needing alternative approaches:** [List counties with low confidence data and suggest specific alternatives - manual review, additional surveys, etc.]
+3. **Counties needing alternative approaches:** [Counties identified as Low Confidence require alternative approaches due to high margins of error and limited data reliability. For these counties, algorithmic outputs should not be used as the sole basis for decision-making. Instead, the Department should rely on manual review, aggregated or multi-year data, supplemental administrative records, or targeted local surveys to inform policy decisions and reduce the risk of statistical bias.]
 
 ## Questions for Further Investigation
 
-[List 2-3 questions that your analysis raised that you'd like to explore further in future assignments. Consider questions about spatial patterns, time trends, or other demographic factors.]
+1. How do MOE patterns vary spatially across Pennsylvania, and are high-uncertainty tracts geographically clustered in rural, suburban, or peripheral urban areas?
+2. How do margins of error change over time, and are certain counties or tracts becoming more or less reliable?
 
 # Technical Notes
 
