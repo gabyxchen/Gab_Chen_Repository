@@ -220,12 +220,22 @@ tract_data <- get_acs(
   year = 2022,
   survey = "acs5",
   output = "wide"
-)
+) %>%
+# Clean county names
+  mutate(
+    County_clean1 = str_extract(NAME, "(?<=;).*?(?=;)") # extract whatever is between two ;
+  ) %>%
+  mutate(
+    County_clean = str_extract(County_clean1, "(?<=\\s)\\S+(?=\\s)") # extract whatever is between two spaces
+  )
 # Hint: You may need to specify county codes in the county parameter
+# filter for Adams and Cameron County
+selected_tract <- tract_data %>%
+filter(County_clean == c("Adams", "Cameron"))
 
 # Calculate percentage of each group using mutate()
 # Create percentages for white, Black, and Hispanic populations
-pct_race <- tract_data %>%
+pct_race <- selected_tract %>%
   mutate(
     pct_white = round(whiteE / totpopE, 3) * 100,
     pct_black = round(blackE / totpopE, 3) * 100,
