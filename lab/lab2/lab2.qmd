@@ -1,7 +1,7 @@
 ---
 title: "Lab 2: Spatial Analysis and Visualization"
 subtitle: "Healthcare Access and Equity in Pennsylvania"
-author: "Your Name Here"
+author: "Gab Chen"
 date: today
 format: 
   html:
@@ -48,22 +48,39 @@ Load the required spatial data:
 **Your Task:**
 ```{r}
 # Load required packages
-
+library(sf)
+library(tidyverse)
+library(ggplot2)
+library(tigris)
+library(tidycensus)
 
 # Load spatial data
+pa_counties <- st_read("C:/Users/Gab/OneDrive/Documents/SPRING 2026/CPLN5920_PPA/PPA_Portfolio/lecture/week4/Pennsylvania_County_Boundaries/Pennsylvania_County_Boundaries.shp")
 
+hospitals <- st_read("C:/Users/Gab/OneDrive/Documents/SPRING 2026/CPLN5920_PPA/PPA_Portfolio/lecture/week4/hospitals.geojson")
 
-
+pa_tracts <- tracts(
+  state = "PA",
+  cb = TRUE,
+  year = 2022
+)
 
 # Check that all data loaded correctly
+glimpse(hospitals)
+glimpse(pa_tracts)
 
+# Check crs
+st_crs(hospitals)
+st_crs(pa_tracts)
+st_crs(pa_counties)
 
 ```
 
 **Questions to answer:**
-- How many hospitals are in your dataset?
-- How many census tracts?
+- How many hospitals are in your dataset? 223
+- How many census tracts? 3445
 - What coordinate reference system is each dataset in?
+hospitals is in WGS 84, pa_tracts is in NAD83, and pa_counties is in WGS 84 / Pseudo-Mercator.
 
 ---
 
