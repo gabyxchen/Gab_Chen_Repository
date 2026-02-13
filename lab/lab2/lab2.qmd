@@ -68,6 +68,7 @@ pa_tracts <- tracts(
 # Check that all data loaded correctly
 glimpse(hospitals)
 glimpse(pa_tracts)
+glimpse(pa_counties)
 
 # Check crs
 st_crs(hospitals)
@@ -96,19 +97,64 @@ Use `tidycensus` to download tract-level demographic data for Pennsylvania.
 **Your Task:**
 ```{r}
 # Get demographic data from ACS
+pa_demographic <- get_acs(
+  geography = "tract",
+  state = "PA",
+  year = 2022,
+  survey = "acs5",
+  output = "wide",
+  variables = c(
+    # Total population
+    totpop = "B01003_001",
+    
+    # Median household income
+    medinc = "B19013_001",
+    
+    # Age 65+ (male)
+    m65_66 = "B01001_020",
+    m67_69 = "B01001_021",
+    m70_74 = "B01001_022",
+    m75_79 = "B01001_023",
+    m80_84 = "B01001_024",
+    m85p   = "B01001_025",
+    
+    # Age 65+ (female)
+    f65_66 = "B01001_044",
+    f67_69 = "B01001_045",
+    f70_74 = "B01001_046",
+    f75_79 = "B01001_047",
+    f80_84 = "B01001_048",
+    f85p   = "B01001_049"
+  )
+)
 
+# Create total 65+ column
+pa_demographic <- pa_demographic %>%
+  mutate(
+    elderlyE = 
+       m65_66E + m67_69E + m70_74E + m75_79E + m80_84E + m85pE +
+      f65_66E + f67_69E + f70_74E + f75_79E + f80_84E + f85pE
+  ) 
 
-
-
+# Drop unnecessary columns
+pa_demographic <- pa_demographic[,-c(7:30)]
+  
 # Join to tract boundaries
+tract_with_data <- pa_tracts %>%
+  left_join(pa_demographic, by = "GEOID")
 
+# Answer the question
+sum(is.na(tract_with_data$medincE))
+
+# Answer the question
+medinc_PA_tracts = median(tract_with_data$medincE, na.rm = TRUE)
 
 ```
 
 **Questions to answer:**
-- What year of ACS data are you using?
-- How many tracts have missing income data?
-- What is the median income across all PA census tracts?
+- What year of ACS data are you using? 2022
+- How many tracts have missing income data? 62
+- What is the median income across all PA census tracts? 70188
 
 ---
 
@@ -121,17 +167,43 @@ Identify census tracts with vulnerable populations based on TWO criteria:
 **Your Task:**
 ```{r}
 # Filter for vulnerable tracts based on your criteria
+# Add a new column pct_elderly to tract_with_data
+tract_with_data <- tract_with_data %>%
+  mutate(
+    pct_elderly = round(elderlyE / totpopE * 100, 1)
+  )
 
+# Define low-income and high elderly thresholds
+income_cutoff <- quantile(tract_with_data$medincE, 0.25, na.rm = TRUE)
+elderly_cutoff <- quantile(tract_with_data$pct_elderly, 0.75, na.rm = TRUE)
 
+# Define vulnerable population with medinc lower than income_cutoff and pct_elderly higher than elderly_cutoff
+# Flag vulnerability
+tract_with_data <- tract_with_data %>%
+  mutate(
+    vulnerable = medincE <= income_cutoff &
+                 pct_elderly >= elderly_cutoff
+  )
 
+# Filter vulnerable tracts
+vulterable_tract <- tract_with_data %>%
+  filter(vulnerable)
+
+# Summary
+tract_with_data %>%
+  summarise(
+    total_tracts = n(),
+    vulnerable_tracts = sum(vulnerable, na.rm = TRUE),
+    pct_vulnerable = round(mean(vulnerable, na.rm = TRUE) * 100, 2) # vulnerable is logical, mean(vulnerable) equals to #TRUE / total rows
+  )
 
 ```
 
 **Questions to answer:**
-- What income threshold did you choose and why?
-- What elderly population threshold did you choose and why?
-- How many tracts meet your vulnerability criteria?
-- What percentage of PA census tracts are considered vulnerable by your definition?
+- What income threshold did you choose and why? 55924; Lowest quantile of median income among all PA census tracts.
+- What elderly population threshold did you choose and why? 23.1%; Highest quantile of percentage of elderly among all PA census tracts.
+- How many tracts meet your vulnerability criteria? 166
+- What percentage of PA census tracts are considered vulnerable by your definition? 4.87%
 
 ---
 
@@ -142,12 +214,48 @@ For each vulnerable tract, calculate the distance to the nearest hospital.
 **Your Task:**
 ```{r}
 # Transform to appropriate projected CRS
-
+# NAD83 / UTM Zone 18N, PA lies almost entirely inside UTM Zone 18, units = meters
+tract_with_data <- st_transform(tract_with_data, 26918)
+hospitals <- st_transform(hospitals, 26918)
 
 # Calculate distance from each tract centroid to nearest hospital
+# Create tract centroids
+tract_centroids <- st_centroid(tract_with_data)
 
+# Find nearest hospital index
+nearest_index <- st_nearest_feature(tract_centroids, hospitals)
 
+# Compute distance (m)
+nearest_distance <- st_distance(
+  tract_centroids,
+  hospitals[nearest_index, ],
+  by_element = TRUE
+)
 
+# Convert to miles, 1 mile = 1609.34 meters
+tract_with_data$dist_to_hospital_miles <-
+  round(as.numeric(nearest_distance) / 1609.34, 2)
+
+# Answer the question
+# Average distance in mile
+tract_with_data %>%
+  filter(vulnerable) %>%
+  summarise(
+    avg_distance = round(mean(dist_to_hospital_miles, na.rm = TRUE), 2)
+  )
+# Maximum distance in mile
+tract_with_data %>%
+  filter(vulnerable) %>%
+  summarise(
+    max_distance = max(dist_to_hospital_miles, na.rm = TRUE)
+  )
+
+# Filter
+tract_with_data %>%
+  filter(vulnerable & dist_to_hospital_miles > 15) %>%
+  summarise(
+    vulnerable_over_15_miles = n()
+  )
 
 ```
 
@@ -157,9 +265,9 @@ For each vulnerable tract, calculate the distance to the nearest hospital.
 - Explain why you chose your projection
 
 **Questions to answer:**
-- What is the average distance to the nearest hospital for vulnerable tracts?
-- What is the maximum distance?
-- How many vulnerable tracts are more than 15 miles from the nearest hospital?
+- What is the average distance to the nearest hospital for vulnerable tracts? 4.72 miles
+- What is the maximum distance? 19.16 miles
+- How many vulnerable tracts are more than 15 miles from the nearest hospital? 9
 
 ---
 
@@ -170,16 +278,35 @@ Define "underserved" as vulnerable tracts that are more than 15 miles from the n
 **Your Task:**
 ```{r}
 # Create underserved variable
+tract_with_data <- tract_with_data %>%
+  mutate(
+    underserved = vulnerable & dist_to_hospital_miles > 15
+  )
 
+# Answer the question
+# Number of underserved tracts
+tract_with_data %>%
+  summarise(
+    underserved_tracts = sum(underserved, na.rm = TRUE)
+  )
 
-
+# % of vulnerable tracts that is underserved
+tract_with_data %>%
+  summarise(
+    total_vulnerable = sum(vulnerable, na.rm = TRUE),
+    underserved = sum(underserved, na.rm = TRUE),
+    pct_underserved = round(
+      underserved / total_vulnerable * 100,
+      2
+    )
+  )
 
 ```
 
 **Questions to answer:**
-- How many tracts are underserved?
-- What percentage of vulnerable tracts are underserved?
-- Does this surprise you? Why or why not?
+- How many tracts are underserved? 9
+- What percentage of vulnerable tracts are underserved? 5.42%
+- Does this surprise you? Why or why not? Yes. Only a very low percentage of vulnerable tracts are underserved by hospitals.This suggests that while vulnerable tracts exist, most are not geographically isolated from hospital access. Vulnerability may be driven more by socioeconomic conditions than physical distance.
 
 ---
 
