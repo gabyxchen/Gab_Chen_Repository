@@ -46,7 +46,7 @@ Load the required spatial data:
 - Pennsylvania census tracts
 
 **Your Task:**
-```{r}
+```{r, echo=FALSE}
 # Load required packages
 library(sf)
 library(tidyverse)
@@ -66,10 +66,6 @@ pa_tracts <- tracts(
 )
 
 # Check that all data loaded correctly
-glimpse(hospitals)
-glimpse(pa_tracts)
-glimpse(pa_counties)
-
 # Check crs
 st_crs(hospitals)
 st_crs(pa_tracts)
@@ -316,11 +312,51 @@ Use spatial joins and aggregation to calculate county-level statistics about vul
 
 **Your Task:**
 ```{r}
+# Make sure tract_with_data and pa_counties have the same CRS
+pa_counties <- st_transform(pa_counties, st_crs(tract_with_data))
 # Spatial join tracts to counties
-
+tracts_with_county <- st_join(
+  tract_with_data,
+  pa_counties,
+  join = st_within   # best choice for tract inside county
+)
 
 # Aggregate statistics by county
+county_summary <- tracts_with_county %>%
+  group_by(COUNTY_NAM) %>%   # replace with your county column name
+  summarise(
+    underserved_tracts = sum(underserved, na.rm = TRUE), # number of underserved tracts
+    vulnerable_tracts = sum(vulnerable, na.rm = TRUE), # number of vulnerable tracts
+    pct_vul_underserved = round(underserved_tracts / vulnerable_tracts * 100, 2), # Percentage of vulnerable tracts that are underserved
+    avg_dist_nearest_hospital = round(
+      mean(dist_to_hospital_miles[vulnerable], na.rm = TRUE),
+      2
+    ), #Average distance to nearest hospital for vulnerable tracts
+    total_vulnerable_population = sum(
+      totpopE[vulnerable],
+      na.rm = TRUE
+    ) # Total vulnerable population
+  )
 
+# Answer the questions
+top5_pct_underserved <- county_summary %>%
+  filter(!is.na(COUNTY_NAM)) %>%
+  arrange(desc(pct_vul_underserved)) %>%
+  slice_head(n = 5)
+
+# Answer the questions
+county_population_far <- tracts_with_county %>%
+  group_by(COUNTY_NAM) %>%
+  summarise(
+    vulnerable_far_population = sum(
+      totpopE[vulnerable & underserved],
+      na.rm = TRUE
+    )
+  ) %>%
+  filter(!is.na(COUNTY_NAM)) %>%
+  arrange(desc(vulnerable_far_population))
+
+slice(county_population_far, 1:5)
 
 
 
@@ -334,8 +370,8 @@ Use spatial joins and aggregation to calculate county-level statistics about vul
 - Total vulnerable population
 
 **Questions to answer:**
-- Which 5 counties have the highest percentage of underserved vulnerable tracts?
-- Which counties have the most vulnerable people living far from hospitals?
+- Which 5 counties have the highest percentage of underserved vulnerable tracts? Bradford, Monroe, Allegheny, Beaver, and Bedford. 
+- Which counties have the most vulnerable people living far from hospitals? Bradford, Monroe, Adams, Allegheny, Armstrong.
 - Are there any patterns in where underserved counties are located?
 
 ---
