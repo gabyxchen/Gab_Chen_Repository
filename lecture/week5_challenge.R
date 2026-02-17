@@ -14,7 +14,7 @@ challenge_data <- get_acs(
     total_pop = "B01003_001",       # Total population
     median_income = "B19013_001",   # Median household income
     median_age = "B01002_001",      # Median age
-    percent_college = "B15003_022", # Bachelor's degree or higher
+    college = "B15003_022", # Bachelor's degree or higher
     median_rent = "B25058_001",     # Median rent
     poverty_rate = "B17001_002"     # Population in poverty
   ),
@@ -61,7 +61,32 @@ ggplot(challenge_data, aes(x = median_incomeE, y = home_valueE)) +
   scale_y_continuous(labels = dollar) +
   theme_minimal()
 
-# Test poverty rate as X
-model3 <- lm(home_valueE ~ median_incomeE + median_ageE + total_popE, 
-             data = challenge_data)
-summary(model3)
+# 10-fold cross-validation
+library(caret)
+
+train_control <- trainControl(method = "cv", number = 10)
+
+cv_model <- train(home_valueE ~ median_incomeE + median_ageE,
+                  data = challenge_data,
+                  method = "lm",
+                  trControl = train_control)
+
+cv_model$results
+
+# Check residual plot
+challenge_data$residuals <- residuals(model2)
+challenge_data$fitted <- fitted(model2)
+
+ggplot(challenge_data, aes(x = fitted, y = residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  labs(title = "Residual Plot", x = "Fitted Values", y = "Residuals") +
+  theme_minimal()
+
+# Breusche-Pagan
+library(lmtest)
+bptest(model2)
+
+
+
+

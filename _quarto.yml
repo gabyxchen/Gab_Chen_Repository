@@ -8,11 +8,6 @@ website:
     left:
       - href: index.qmd
         text: Home
-        
-      - text: Weekly Notes
-        menu:
-          - href: weekly-notes/week-01-notes.qmd
-            text: Week 1
           
       - text: Labs
         menu:
@@ -20,6 +15,9 @@ website:
             text: "Lab 0: Getting Started with dply"
           - href: lab/lab1/lab1.qmd
             text: "Lab 1: Census Data Exploration"
+          - href: lab/lab2/lab2.qmd
+            text: "Lab 2: Spatial Analysis and Visualization"
+
 
 format:
   html:
