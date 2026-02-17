@@ -50,7 +50,7 @@ If there is a special character like a colon, you need use double quote mark so 
 
 # Setup
 
-```{r setup}
+```{r, echo=FALSE}
 # Load required packages (hint: you need tidycensus, tidyverse, and knitr)
 library(tidycensus)
 library(tidyverse)
@@ -448,18 +448,18 @@ kable(
 
 **Data Sources:** 
 - U.S. Census Bureau, American Community Survey 2018-2022 5-Year Estimates
-- Retrieved via tidycensus R package on [date]
+- Retrieved via tidycensus R package on 2026-02-10
 
 **Reproducibility:** 
-- All analysis conducted in R version [your version]
+- All analysis conducted in R version 4.5.2
 - Census API key required for replication
-- Complete code and documentation available at: [your portfolio URL]
+- Complete code and documentation available at: https://gabyxchen.github.io/PPA_Portfolio/
 
 **Methodology Notes:**
-[Describe any decisions you made about data processing, county selection, or analytical choices that might affect reproducibility]
+[Adams and Cameron Counties were randomly selected for detailed demographic analysis to represent their respective MOE risk categories, although this selection may introduce elements of randomness that could influence the results.]
 
 **Limitations:**
-[Note any limitations in your analysis - sample size issues, geographic scope, temporal factors, etc.]
+[Only one sample county was selected from each MOE risk category group, and the small sample size may limit the generalizability of the findings. Additionally, this analysis relies solely on 2022 ACS 5-year estimates, which capture conditions within a single time period. As a result, the study does not account for temporal variation or longer-term trends in demographic patterns and data reliability.]
 
 ---
 
