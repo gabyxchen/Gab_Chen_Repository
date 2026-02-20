@@ -170,8 +170,8 @@ tract_with_data <- tract_with_data %>%
   )
 
 # Define low-income and high elderly thresholds
-income_cutoff <- quantile(tract_with_data$medincE, 0.25, na.rm = TRUE)
-elderly_cutoff <- quantile(tract_with_data$pct_elderly, 0.75, na.rm = TRUE)
+income_cutoff <- quantile(tract_with_data$medincE, 0.35, na.rm = TRUE)
+elderly_cutoff <- quantile(tract_with_data$pct_elderly, 0.65, na.rm = TRUE)
 
 # Define vulnerable population with medinc lower than income_cutoff and pct_elderly higher than elderly_cutoff
 # Flag vulnerability
@@ -196,10 +196,10 @@ tract_with_data %>%
 ```
 
 **Questions to answer:**
-- What income threshold did you choose and why? 55924; Lowest quantile of median income among all PA census tracts.
-- What elderly population threshold did you choose and why? 23.1%; Highest quantile of percentage of elderly among all PA census tracts.
-- How many tracts meet your vulnerability criteria? 166
-- What percentage of PA census tracts are considered vulnerable by your definition? 4.87%
+- What income threshold did you choose and why? 70188; Lowest 35% of median income among all PA census tracts.
+- What elderly population threshold did you choose and why? 21.4% elderly; Highest 35% of percentage of elderly among all PA census tracts.
+- How many tracts meet your vulnerability criteria? 360
+- What percentage of PA census tracts are considered vulnerable by your definition? 10.56%
 
 ---
 
@@ -261,9 +261,9 @@ tract_with_data %>%
 - Explain why you chose your projection
 
 **Questions to answer:**
-- What is the average distance to the nearest hospital for vulnerable tracts? 4.72 miles
-- What is the maximum distance? 19.16 miles
-- How many vulnerable tracts are more than 15 miles from the nearest hospital? 9
+- What is the average distance to the nearest hospital for vulnerable tracts? 5.51 miles
+- What is the maximum distance? 29.1 miles
+- How many vulnerable tracts are more than 15 miles from the nearest hospital? 21
 
 ---
 
@@ -300,8 +300,8 @@ tract_with_data %>%
 ```
 
 **Questions to answer:**
-- How many tracts are underserved? 9
-- What percentage of vulnerable tracts are underserved? 5.42%
+- How many tracts are underserved? 21
+- What percentage of vulnerable tracts are underserved? 5.83%
 - Does this surprise you? Why or why not? Yes. Only a very low percentage of vulnerable tracts are underserved by hospitals.This suggests that while vulnerable tracts exist, most are not geographically isolated from hospital access. Vulnerability may be driven more by socioeconomic conditions than physical distance.
 
 ---
@@ -321,9 +321,17 @@ tracts_with_county <- st_join(
   join = st_within   # best choice for tract inside county
 )
 
+# Fix COUNTY_NAM according to NAME.y
+library(stringr)
+
+tracts_with_county <- tracts_with_county %>%
+  mutate(
+    COUNTY = str_extract(NAME.y, "(?<=; ).*?(?= County)")
+         )
+
 # Aggregate statistics by county
 county_summary <- tracts_with_county %>%
-  group_by(COUNTY_NAM) %>%   # replace with your county column name
+  group_by(COUNTY) %>%   # replace with your county column name
   summarise(
     underserved_tracts = sum(underserved, na.rm = TRUE), # number of underserved tracts
     vulnerable_tracts = sum(vulnerable, na.rm = TRUE), # number of vulnerable tracts
@@ -340,39 +348,89 @@ county_summary <- tracts_with_county %>%
 
 # Answer the questions
 top5_pct_underserved <- county_summary %>%
-  filter(!is.na(COUNTY_NAM)) %>%
   arrange(desc(pct_vul_underserved)) %>%
   slice_head(n = 5)
-
+  
 # Answer the questions
 county_population_far <- tracts_with_county %>%
-  group_by(COUNTY_NAM) %>%
+  group_by(COUNTY) %>%
   summarise(
     vulnerable_far_population = sum(
-      totpopE[vulnerable & underserved],
+      totpopE[underserved],
       na.rm = TRUE
     )
   ) %>%
-  filter(!is.na(COUNTY_NAM)) %>%
   arrange(desc(vulnerable_far_population))
 
 slice(county_population_far, 1:5)
 
+
+# Spatial distribution of underserved counties
+library(ggplot2)
+library(units)
+
+# Create population density variable
+tracts_with_county <- tracts_with_county %>%
+  mutate(
+    area_sq_meters = st_area(geometry),
+    area_sq_miles = set_units(area_sq_meters, "mi^2"),
+    pop_density = totpopE / as.numeric(area_sq_miles)
+  )
+
+# Create ggplot
+ggplot() +
+  geom_sf(data = tracts_with_county, aes(fill = pop_density), color = NA) +
+  geom_sf(
+    data = tracts_with_county %>% filter(underserved),
+    fill = "cyan",
+    color = "black",
+    size = 0.3
+  ) +
+  scale_fill_viridis_c(
+    trans = "log", 
+    name = "People per Sq Mile", 
+    labels = scales::comma,
+    direction = -1
+      ) +
+  theme_minimal() +
+  labs(
+    title = "Population Density and Underserved Tracts in PA"
+  )
+
+# Create ggplot
+ggplot() +
+  geom_sf(data = tracts_with_county, aes(fill = medincE), color = NA) +
+  geom_sf(
+    data = tracts_with_county %>% filter(underserved),
+    fill = "red",
+    color = "black",
+    size = 0.3
+  ) +
+  scale_fill_viridis_c(
+    name = "Median Income", 
+    labels = scales::dollar,
+    option = "plasma",
+    direction = -1
+      ) +
+  theme_minimal() +
+  labs(
+    title = "Meidan Income and Underserved Tracts in PA"
+  )
 
 
 ```
 
 **Required county-level statistics:**
 - Number of vulnerable tracts
-- Number of underserved tracts  
+- Number of underserved tracts
 - Percentage of vulnerable tracts that are underserved
 - Average distance to nearest hospital for vulnerable tracts
 - Total vulnerable population
 
 **Questions to answer:**
-- Which 5 counties have the highest percentage of underserved vulnerable tracts? Bradford, Monroe, Allegheny, Beaver, and Bedford. 
-- Which counties have the most vulnerable people living far from hospitals? Bradford, Monroe, Adams, Allegheny, Armstrong.
-- Are there any patterns in where underserved counties are located?
+- Which 5 counties have the highest percentage of underserved vulnerable tracts? Cameron, Forest, Sullivan, Pike, and Dauphin.
+- Which counties have the most vulnerable people living far from hospitals? Bradford, Clearfield, Crawford, Hungtingdon, and Cameron.
+- Are there any patterns in where underserved counties are located? Underserved counties are spatially isolated and tend to located in rural areas with lower median income.
 
 ---
 
@@ -383,8 +441,65 @@ Create a professional table showing the top 10 priority counties for healthcare 
 **Your Task:**
 ```{r}
 # Create and format priority counties table
+library(knitr)
 
+# Select top 10 priority counties
+top10_priority <- tracts_with_county %>%
+  group_by(COUNTY) %>%
+  summarise(
+     # Total vulnerable tracts
+    vulnerable_tracts = sum(vulnerable, na.rm = TRUE),
+    
+    # Total underserved tracts
+    underserved_tracts = sum(underserved, na.rm = TRUE),
+    
+    # Vulnerable population far from hospitals
+    vulnerable_far_population = sum(
+      totpopE[underserved],
+      na.rm = TRUE
+    ),
+    # Total vulnerable population
+    total_vulnerable_population = sum(
+      totpopE[vulnerable],
+      na.rm = TRUE
+    ),
+    
+    # % of vulnerable tracts that are underserved
+    pct_vulnerable_underserved = round(
+      ifelse(
+        vulnerable_tracts == 0,
+        NA,
+        underserved_tracts / vulnerable_tracts * 100
+      ),
+      2
+    ),
+    
+    # Avg distance for vulnerable tracts
+    avg_distance_vulnerable = round(
+      mean(dist_to_hospital_miles[vulnerable], na.rm = TRUE),
+      2
+    )
+  ) %>%
+  arrange(desc(vulnerable_far_population)) %>%
+  slice_head(n = 10)
 
+# Drop the last column
+top10_priority <- top10_priority[, -ncol(top10_priority)]
+
+# kable
+
+kable(
+  top10_priority,
+  col.names = c(
+    "County",
+    "Vulnerable Tracts",
+    "Underserved Tracts",
+    "Vulnerable Population Over 15 Miles from Hospitals",
+    "Total Vulnerable Population",
+    "% of Vulnerable Tracts that Is Underserved",
+    "Average Distance from Hospitals for Vulnerable Tracts"
+  )
+)
 
 
 ```
