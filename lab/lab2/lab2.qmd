@@ -961,8 +961,9 @@ philly_data <- philly_data %>%
     tree_acres = replace_na(tree_acres, 0)
   )
 
-```
-```{r}
+
+
+# ggplot maps
 # Load Package
 library(ggplot2)
 
@@ -982,6 +983,76 @@ philly_data <- philly_data %>%
     tract_sqft = as.numeric(st_area(geometry)),
     tree_pct = (tree_acres * 43560) / tract_sqft * 100,
     low_tree_pct = tree_pct < 0.1
+  )
+# Calculate % black
+philly_data <- philly_data %>%
+  mutate(
+    pct_black = blackE / total_popE * 100
+  )
+
+# Map tracts with low park access and % black
+ggplot(philly_data) +
+  
+  # Base: % Black
+  geom_sf(aes(fill = pct_black), color = "white", size = 0.1) +
+  
+  # Overlay: low park access outline
+  geom_sf(
+    data = philly_data %>% filter(low_park_access),
+    fill = NA,
+    color = "red",
+    size = 0.5
+  ) +
+  
+  scale_fill_viridis_c(
+    option = "plasma",
+    name = "% Black Population"
+  ) +
+  
+  labs(
+    title = "Low Park Access and Racial Composition",
+    subtitle = "Red outlines indicate tracts with < 0.1 park acres per 1,000 residents",
+    caption = "Data Source: PPR Properties; 2024 ACS 5-Year Estimates"
+  ) +
+  
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank()
+  )
+
+# Map tracts with low tree canopy coverage and median income gradient
+ggplot(philly_data) +
+  
+  # Base: Median income gradient
+  geom_sf(aes(fill = median_incomeE), color = "white", size = 0.1) +
+  
+  # Overlay: low canopy outline
+  geom_sf(
+    data = philly_data %>% filter(low_tree_pct),
+    fill = NA,
+    color = "blue",
+    size = 0.5
+  ) +
+  
+  scale_fill_viridis_c(
+    option = "magma",
+    labels = scales::dollar,
+    name = "Median Income"
+  ) +
+  
+  labs(
+    title = "Low Tree Canopy Coverage and Income",
+    subtitle = "Blue outlines indicate tracts with < 0.1% tree canopy coverage",
+    caption = "Data Source: PPR Tree Canopy 2015; 2024 ACS 5-Year Estimates"
+  ) +
+  
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank()
   )
 
 ```
