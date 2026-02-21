@@ -830,6 +830,9 @@ library(sf)
 library(tidycensus)
 library(tidyverse)
 
+#Turn off scientific notation
+options(scipen = 999)
+
 # PPR Tree Canopy GeeoJSON
 tree <- st_read("E:/ArcGIS_files/Packages/Philly Data/ppr_tree_canopy_outlines_2015.geojson")
 # PPR Properties SHP
@@ -901,11 +904,41 @@ park_buffer <- st_buffer(park, dist = 2640)
 park_buffer <- st_union(park_buffer)
 
 # Calculate Park Access by Tract
+tract_access <- st_intersects(
+  philly_data,
+  park_buffer,
+  sparse = FALSE
+)
+# Flag Tracts with Access
+philly_data <- philly_data %>%
+  mutate(
+    park_access = tract_access[,1]
+  )
 
+# Calculate Park Acreage per Tract
+park$area_sqft <- st_area(park)
+park$area_acres <- as.numeric(park$area_sqft) / 43560
 
+# Fix invalid park geometries
+park <- st_make_valid(park)
+# Intersect park and tracts
+park_tract <- st_intersection(park, philly_data)
+# Recalculate area
+park_tract$area_acres <- as.numeric(st_area(park_tract)) / 43560
+# Summarize by tract
+park_by_tract <- park_tract %>%
+  group_by(GEOID) %>%
+  summarise(
+    park_acres = round(sum(area_acres, na.rm = TRUE), 2)
+  )
 
-
-
+# Join back to tracts
+philly_data <- philly_data %>%
+  st_join(park_by_tract, by = "GEOID") %>%
+  mutate(
+    park_acres = replace_na(park_acres, 0),
+    park_acres_per_capita = round(park_acres / total_popE, 2)
+  )
 
 
 ```
