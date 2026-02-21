@@ -931,7 +931,6 @@ park_by_tract <- park_tract %>%
   summarise(
     park_acres = round(sum(area_acres, na.rm = TRUE), 2)
   )
-
 # Join back to tracts
 philly_data <- philly_data %>%
   st_join(park_by_tract, by = "GEOID") %>%
@@ -940,6 +939,50 @@ philly_data <- philly_data %>%
     park_acres_per_capita = round(park_acres / total_popE, 2)
   )
 
+# Calculate Tree Canopy Acreage per Tract
+tree$area_sqft <- st_area(tree)
+tree$area_acres <- as.numeric(tree$shape_area)
+# Fix invalid tree geometries
+tree <- st_make_valid(tree)
+# Intersect tree and tracts
+tree_tract <- st_intersection(tree, philly_data)
+# Recalculate area
+tree_tract$area_acres <- as.numeric(st_area(tree_tract)) / 43560
+# Summarize by tract
+tree_by_tract <- tree_tract %>%
+  group_by(GEOID.x) %>%
+  summarise(
+    tree_acres = round(sum(area_acres, na.rm = TRUE), 2)
+  )
+# Join back to tracts
+philly_data <- philly_data %>%
+  st_join(tree_by_tract, by = "GEOID") %>%
+  mutate(
+    tree_acres = replace_na(tree_acres, 0)
+  )
+
+```
+```{r}
+# Load Package
+library(ggplot2)
+
+# Calculate park area per 1000
+# Flag tracts with park_acres_per_1000 lower than 0.1
+philly_data <- philly_data %>%
+  mutate(
+    park_acres_per_1000 = (park_acres / total_popE) * 1000,
+    low_park_access = park_acres_per_1000 < 0.1
+  
+  )
+
+# Calculate % canopy coverage per tract
+# Flag tracts with tree_pct lower than 0.1
+philly_data <- philly_data %>%
+  mutate(
+    tract_sqft = as.numeric(st_area(geometry)),
+    tree_pct = (tree_acres * 43560) / tract_sqft * 100,
+    low_tree_pct = tree_pct < 0.1
+  )
 
 ```
 
