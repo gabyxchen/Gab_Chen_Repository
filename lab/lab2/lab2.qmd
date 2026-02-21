@@ -453,18 +453,7 @@ top10_priority <- tracts_with_county %>%
     # Total underserved tracts
     underserved_tracts = sum(underserved, na.rm = TRUE),
     
-    # Vulnerable population far from hospitals
-    vulnerable_far_population = sum(
-      totpopE[underserved],
-      na.rm = TRUE
-    ),
-    # Total vulnerable population
-    total_vulnerable_population = sum(
-      totpopE[vulnerable],
-      na.rm = TRUE
-    ),
-    
-    # % of vulnerable tracts that are underserved
+     # % of vulnerable tracts that are underserved
     pct_vulnerable_underserved = round(
       ifelse(
         vulnerable_tracts == 0,
@@ -472,6 +461,18 @@ top10_priority <- tracts_with_county %>%
         underserved_tracts / vulnerable_tracts * 100
       ),
       2
+    ),
+    
+    # Total vulnerable population
+    total_vulnerable_population = sum(
+      totpopE[vulnerable],
+      na.rm = TRUE
+    ),
+    
+    # Vulnerable population far from hospitals
+    vulnerable_far_population = sum(
+      totpopE[underserved],
+      na.rm = TRUE
     ),
     
     # Avg distance for vulnerable tracts
@@ -483,22 +484,28 @@ top10_priority <- tracts_with_county %>%
   arrange(desc(vulnerable_far_population)) %>%
   slice_head(n = 10)
 
-# Drop the last column
-top10_priority <- top10_priority[, -ncol(top10_priority)]
+# Drop the last column, convert to a regular data frame
+top10_priority <- st_drop_geometry(top10_priority)
 
 # kable
-
+top10_priority %>%
+  # Clean format
+   mutate(
+    vulnerable_far_population = scales::comma(vulnerable_far_population),
+    total_vulnerable_population = scales::comma(total_vulnerable_population),
+    pct_vulnerable_underserved = paste0(pct_vulnerable_underserved, "%")
+  ) %>%
 kable(
-  top10_priority,
   col.names = c(
     "County",
     "Vulnerable Tracts",
     "Underserved Tracts",
-    "Vulnerable Population Over 15 Miles from Hospitals",
-    "Total Vulnerable Population",
     "% of Vulnerable Tracts that Is Underserved",
+    "Total Vulnerable Population",
+    "Vulnerable Population Over 15 Miles from Hospitals",
     "Average Distance from Hospitals for Vulnerable Tracts"
-  )
+  ),
+  caption = "Top 10 Priority Counties by Vulnerable Population Far from Hospitals"
 )
 
 
@@ -523,10 +530,33 @@ Create a choropleth map showing healthcare access challenges at the county level
 
 **Your Task:**
 ```{r}
+# Transform CRS
+hospitals <- st_transform(hospitals, st_crs(tracts_with_county))
+
 # Create county-level access map
-
-
-
+ggplot(county_summary) +
+  geom_sf(aes(fill = pct_vul_underserved), color = "white") +
+  
+  # Add hospital location as points
+  geom_sf(data = hospitals,
+          color = "black",
+          fill = "white",
+          shape = 21,
+          size = 2,
+          stroke = 0.5) +
+  
+  scale_fill_viridis_c(
+    option = "plasma",
+    direction = -1,
+    labels = scales::percent_format(scale = 1),
+    name = "% Underserved"
+  ) +
+  labs(
+    title = "Percentage of Vulnerable Tracts That Are Underserved",
+    subtitle = "Pennsylvania Counties",
+    caption = "Data Source: 2022 ACS 5-Year Estimates (U.S. Census Bureau) and Hospital Locations Dataset"
+  ) +
+  theme_void()
 
 ```
 
@@ -546,8 +576,43 @@ Create a map highlighting underserved vulnerable tracts.
 
 **Your Task:**
 ```{r}
-# Create detailed tract-level map
+# Create a labeled variable
+tracts_with_county <- tracts_with_county %>%
+  mutate(
+    service_status = ifelse(
+      underserved,
+      "Underserved Vulnerable Tract",
+      "Other Tracts"
+    )
+  )
 
+# Create detailed tract-level map
+ggplot(tracts_with_county) +
+  geom_sf(aes(fill = service_status), color = "white", size = 0.1) +
+  
+  scale_fill_manual(
+    values = c(
+      "Underserved Vulnerable Tract" = "red",
+      "Other Tracts" = "grey85"
+    ),
+    name = "Tract Classification"
+  ) +
+  
+  # Add hospital location as points
+  geom_sf(data = hospitals,
+          color = "black",
+          fill = "white",
+          shape = 21,
+          size = 2,
+          stroke = 0.5) +
+  
+  labs(
+    title = "Underserved Vulnerable Census Tracts in Pennsylvania with Hospital Locations",
+    subtitle = "Low Income + High Elderly Population + >15 Miles from Nearest Hospital",
+    caption = "Data Source: 2022 ACS 5-Year Estimates; Hospital Locations Dataset"
+  ) +
+  
+  theme_void()
 
 
 
@@ -568,10 +633,59 @@ Create a visualization showing the distribution of distances to hospitals for vu
 
 **Your Task:**
 ```{r}
-# Create distribution visualization
+# Histogram of Distance to Hospitals (Vulverable Tracts)
+ggplot(
+  tracts_with_county %>% filter(vulnerable),
+  aes(x = dist_to_hospital_miles)
+) +
+  geom_histogram(
+    binwidth = 5,
+    fill = "steelblue",
+    color = "white"
+  ) +
+  labs(
+    title = "Distribution of Distance to Nearest Hospital",
+    subtitle = "Vulnerable Census Tracts in Pennsylvania",
+    x = "Distance to Nearest Hospital (Miles)",
+    y = "Number of Vulnerable Tracts",
+    caption = "The distribution is right-skewed, indicating that while many vulnerable tracts are relatively close to hospitals, a subset experiences substantially longer travel distances."
+  ) +
+  theme_minimal()
 
+```
+```{r}
+# Bar Chart of Underserved Tracts by County
+ggplot(county_summary %>% 
+         arrange(desc(underserved_tracts)) %>% 
+         slice_head(n = 10),
+       aes(x = reorder(COUNTY, underserved_tracts),
+           y = underserved_tracts)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    title = "Top 10 Counties by Number of Underserved Tracts",
+    x = "County",
+    y = "Number of Underserved Tracts",
+    caption = "A small number of counties account for a disproportionate share of underserved tracts, suggesting spatial concentration of healthcare access challenges."
+  ) +
+  theme_minimal()
 
-
+```
+```{r}
+# Scatter Plot: Distance vs Vulnerable Population
+ggplot(
+  tracts_with_county %>% filter(vulnerable),
+  aes(x = dist_to_hospital_miles, y = totpopE)
+) +
+  geom_point(alpha = 0.6, color = "steelblue") +
+  geom_smooth(method = "lm", se = FALSE, color = "darkred") +
+  labs(
+    title = "Distance to Hospital vs. Vulnerable Population Size",
+    x = "Distance to Nearest Hospital (Miles)",
+    y = "Total Population in Vulnerable Tract",
+    caption = "While some high-population vulnerable tracts are located far from hospitals, the relationship between population size and distance appears weak, suggesting geographic isolation is not solely driven by tract size."
+  ) +
+  theme_minimal()
 
 ```
 
@@ -582,6 +696,7 @@ Create a visualization showing the distribution of distances to hospitals for vu
 - Scatter plot of distance vs. vulnerable population size
 
 **Requirements:**
+
 - Clear axes labels with units
 - Appropriate title
 - Professional formatting
@@ -698,7 +813,11 @@ Choose ONE of the following challenge exercises, or propose your own research qu
 
 ### Your Analysis
 
-**Your Task:**
+**Option C: Green Space Equity** 
+- **Data:** Parks, Street Trees, Census tracts (race/income demographics)
+- **Question:** "Do low-income and minority neighborhoods have equitable access to green space?"
+- **Operations:** Buffer parks (10-minute walk = 0.5 mile), calculate tree canopy or park acreage per capita, compare by demographics
+- **Policy relevance:** Climate resilience, environmental justice, urban forestry investment
 
 1. **Find and load additional data**
    - Document your data source
@@ -706,24 +825,54 @@ Choose ONE of the following challenge exercises, or propose your own research qu
    - Provide basic summary statistics
 
 ```{r}
-# Load your additional dataset
+# Load Package
+library(sf)
+library(tidycensus)
+library(tidyverse)
 
+# PPR Tree Canopy GeeoJSON
+tree <- st_read("E:/ArcGIS_files/Packages/Philly Data/ppr_tree_canopy_outlines_2015.geojson")
+# PPR Properties SHP
+park <- st_read("E:/ArcGIS_files/Packages/Philly Data/PPR_Properties/PPR_Properties.shp")
 
+# 2024 ACS race/income data
+vars <- c(
+  total_pop     = "B03002_001",  # Total population
+  white         = "B03002_003",  # White alone
+  black         = "B03002_004",  # Black or African American alone
+  hispanic      = "B03002_012",  # Hispanic/Latino (of any race)
+  median_income = "B19013_001"   # Median household income
+)
 
+philly_data <- get_acs(
+  geography = "tract",
+  state = "PA",
+  county = "Philadelphia",
+  variables = vars,
+  year = 2024,
+  survey = "acs5",
+  output = "wide",
+  geometry = TRUE         # include spatial geometry if you want to map
+)
+
+# Transform to Pennsylvanis South (US Feet)
+tree <- st_transform(tree, 2272)
+park <- st_transform(park, 2272)
+philly_data <- st_transform(philly_data, 2272)
 
 ```
 
 **Questions to answer:**
-- What dataset did you choose and why?
+- What dataset did you choose and why? PPR Tree Canopy GeeoJSON, PPR Properties SHP, 2024 ACS race/income data
 - What is the data source and date?
-- How many features does it contain?
-- What CRS is it in? Did you need to transform it?
+- How many features does it contain? Tree has 22407 features; Park has 504 features.
+- What CRS is it in? Did you need to transform it? Tree is in WGS 84; Park is in WGS 84 / Pseudo-Mercator.
 
 ---
 
 2. **Pose a research question**
 
-Write a clear research statement that your analysis will answer.
+Do low-income and minority neighborhoods have equitable access to green space?
 
 **Examples:**
 - "Do vulnerable tracts have adequate public transit access to hospitals?"
@@ -734,7 +883,7 @@ Write a clear research statement that your analysis will answer.
 
 3. **Conduct spatial analysis**
 
-Use at least TWO spatial operations to answer your research question.
+Buffer parks (10-minute walk = 0.5 mile), calculate tree canopy or park acreage per capita, compare by demographics.
 
 **Required operations (choose 2+):**
 - Buffers
@@ -746,10 +895,12 @@ Use at least TWO spatial operations to answer your research question.
 
 **Your Task:**
 ```{r}
-# Your spatial analysis
+# Buffer parks 0.5 mile = 2640 ft
+park_buffer <- st_buffer(park, dist = 2640)
+# Dissolve buffer
+park_buffer <- st_union(park_buffer)
 
-
-
+# Calculate Park Access by Tract
 
 
 
